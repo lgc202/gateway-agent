@@ -1,1 +1,1 @@
-# gateway-assistant
+# gateway-agent
