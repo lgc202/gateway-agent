@@ -1,0 +1,407 @@
+openapi: 3.1.0
+info:
+  title: Gateway Agent API
+  version: 1.0.0
+  description: Gateway Agent 当前提供的 Chat 与 Message 基础 API
+servers:
+  - url: http://127.0.0.1:8080
+tags:
+  - name: Health
+  - name: Chats
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: 检查进程是否存活
+      responses:
+        "200":
+          $ref: "#/components/responses/HealthResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /readyz:
+    get:
+      tags: [Health]
+      operationId: getReadiness
+      summary: 检查 MySQL 是否可用
+      responses:
+        "200":
+          $ref: "#/components/responses/ReadinessResponse"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/chats:
+    post:
+      tags: [Chats]
+      operationId: createChat
+      summary: 创建空对话
+      responses:
+        "201":
+          $ref: "#/components/responses/ChatCreated"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/chats/{chat_id}:
+    parameters:
+      - $ref: "#/components/parameters/ChatID"
+    get:
+      tags: [Chats]
+      operationId: getChat
+      summary: 查询对话
+      responses:
+        "200":
+          $ref: "#/components/responses/ChatResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/ChatNotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/chats/{chat_id}/messages:
+    parameters:
+      - $ref: "#/components/parameters/ChatID"
+    post:
+      tags: [Chats]
+      operationId: appendUserMessage
+      summary: 追加用户消息
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppendMessageRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/MessageCreated"
+        "400":
+          $ref: "#/components/responses/InvalidMessage"
+        "404":
+          $ref: "#/components/responses/ChatNotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    get:
+      tags: [Chats]
+      operationId: listChatMessages
+      summary: 按游标查询对话消息
+      parameters:
+        - $ref: "#/components/parameters/AfterID"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          $ref: "#/components/responses/MessagePageResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/ChatNotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    ChatID:
+      name: chat_id
+      in: path
+      required: true
+      description: 对话 ID
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 18446744073709551615
+    AfterID:
+      name: after_id
+      in: query
+      required: false
+      description: 只返回 ID 大于该值的消息
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 18446744073709551615
+        default: 0
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: 单次返回数量
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 200
+        default: 50
+  headers:
+    RequestID:
+      description: 当前请求的追踪 ID
+      schema:
+        type: string
+  schemas:
+    Chat:
+      type: object
+      additionalProperties: false
+      required: [id, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 18446744073709551615
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Message:
+      type: object
+      additionalProperties: false
+      required: [id, chat_id, role, content, created_at]
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          maximum: 18446744073709551615
+        chat_id:
+          type: integer
+          minimum: 1
+          maximum: 18446744073709551615
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    MessagePage:
+      type: object
+      additionalProperties: false
+      required: [items, next_after_id]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        next_after_id:
+          type: integer
+          minimum: 0
+          maximum: 18446744073709551615
+    Status:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+    AppendMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: UTF-8 字节长度不能超过 60 KiB，去除首尾空白后不能为空
+    ChatEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Chat"
+    MessageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Message"
+    MessagePageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MessagePage"
+    StatusEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Status"
+    SuccessEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data]
+      properties:
+        code:
+          type: string
+          const: OK
+        message:
+          type: string
+          const: success
+        data: {}
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [code, message, data]
+      properties:
+        code:
+          type: string
+          enum:
+            - INVALID_REQUEST
+            - CHAT_NOT_FOUND
+            - INVALID_MESSAGE_CONTENT
+            - INTERNAL_ERROR
+        message:
+          type: string
+        data:
+          type: "null"
+    InvalidRequestEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ErrorEnvelope"
+        - type: object
+          properties:
+            code:
+              const: INVALID_REQUEST
+    InvalidMessageEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ErrorEnvelope"
+        - type: object
+          properties:
+            code:
+              enum: [INVALID_REQUEST, INVALID_MESSAGE_CONTENT]
+    ChatNotFoundEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ErrorEnvelope"
+        - type: object
+          properties:
+            code:
+              const: CHAT_NOT_FOUND
+    InternalErrorEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ErrorEnvelope"
+        - type: object
+          properties:
+            code:
+              const: INTERNAL_ERROR
+  responses:
+    HealthResponse:
+      description: 进程存活
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusEnvelope"
+    ReadinessResponse:
+      description: 服务已就绪
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StatusEnvelope"
+    ChatCreated:
+      description: 对话已创建
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ChatEnvelope"
+    ChatResponse:
+      description: 对话
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ChatEnvelope"
+    MessageCreated:
+      description: 消息已创建
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MessageEnvelope"
+    MessagePageResponse:
+      description: 消息分页结果
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MessagePageEnvelope"
+    InvalidRequest:
+      description: 请求参数不合法
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvalidRequestEnvelope"
+          example:
+            code: INVALID_REQUEST
+            message: chat_id 必须是大于 0 的整数
+            data: null
+    InvalidMessage:
+      description: 请求或消息正文不合法
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InvalidMessageEnvelope"
+    ChatNotFound:
+      description: 对话不存在
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ChatNotFoundEnvelope"
+          example:
+            code: CHAT_NOT_FOUND
+            message: Chat 不存在
+            data: null
+    ServiceUnavailable:
+      description: MySQL 等必要依赖暂时不可用
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InternalErrorEnvelope"
+          example:
+            code: INTERNAL_ERROR
+            message: 服务暂时不可用
+            data: null
+    InternalError:
+      description: 服务器内部错误
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/InternalErrorEnvelope"
+          example:
+            code: INTERNAL_ERROR
+            message: 服务器内部错误
+            data: null

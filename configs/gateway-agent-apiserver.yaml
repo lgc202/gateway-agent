@@ -1,0 +1,11 @@
+http:
+  host: "0.0.0.0"
+  port: 8080
+
+mysql:
+  # 本地开发默认值与 deploy/docker-compose.yaml 保持一致，生产环境必须覆盖
+  host: "127.0.0.1"
+  port: 3306
+  database: "gateway_agent"
+  username: "gateway_agent"
+  password: "gateway_agent"

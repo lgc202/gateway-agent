@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Gateway Agent 单网关专属智能运维架构</title>
+  <desc id="desc">一套 Gateway Agent 绑定一套逻辑 Gateway，通过对话、计划、审批、工具执行与可靠数据组件完成网关运维。</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071326"/>
+      <stop offset="0.55" stop-color="#0b1f3a"/>
+      <stop offset="1" stop-color="#101a34"/>
+    </linearGradient>
+    <linearGradient id="agent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="gateway" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#059669"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="user" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#020617" flood-opacity="0.42"/>
+    </filter>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity="0.28"/>
+    </filter>
+    <marker id="arrowBlue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#60a5fa"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#34d399"/>
+    </marker>
+    <style>
+      .font { font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; }
+      .title { font-size: 42px; font-weight: 760; fill: #f8fafc; letter-spacing: 0.4px; }
+      .subtitle { font-size: 19px; font-weight: 450; fill: #a5b4fc; }
+      .section { font-size: 25px; font-weight: 720; fill: #ffffff; }
+      .label { font-size: 18px; font-weight: 650; fill: #e2e8f0; }
+      .small { font-size: 15px; font-weight: 500; fill: #cbd5e1; }
+      .tiny { font-size: 13px; font-weight: 550; fill: #94a3b8; }
+      .chip { font-size: 14px; font-weight: 650; fill: #dbeafe; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1360" cy="120" r="300" fill="#4f46e5" opacity="0.08"/>
+  <circle cx="160" cy="760" r="280" fill="#0891b2" opacity="0.07"/>
+
+  <g class="font">
+    <text x="90" y="82" class="title">Gateway Agent · 单网关专属智能运维控制面</text>
+    <text x="92" y="119" class="subtitle">一套 Agent 只绑定一套逻辑 Gateway：目标固定、权限清晰、审批可追溯、故障半径可控</text>
+
+    <g transform="translate(1190 54)">
+      <rect width="130" height="34" rx="17" fill="#1d4ed8" opacity="0.34" stroke="#60a5fa" stroke-opacity="0.45"/>
+      <text x="65" y="22" text-anchor="middle" class="chip">企业私有化</text>
+      <rect x="142" width="128" height="34" rx="17" fill="#047857" opacity="0.32" stroke="#34d399" stroke-opacity="0.45"/>
+      <text x="206" y="22" text-anchor="middle" class="chip" fill="#d1fae5">审批后执行</text>
+    </g>
+
+    <!-- User and conversation -->
+    <g filter="url(#shadow)" transform="translate(70 205)">
+      <rect width="300" height="390" rx="30" fill="#0f2747" stroke="#38bdf8" stroke-opacity="0.42"/>
+      <rect x="20" y="20" width="260" height="68" rx="20" fill="url(#user)" opacity="0.93"/>
+      <circle cx="58" cy="54" r="17" fill="#ffffff" opacity="0.92"/>
+      <path d="M48 67c4-10 16-14 25-7 3 2 5 4 6 7" fill="none" stroke="#2563eb" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="58" cy="49" r="6" fill="#2563eb"/>
+      <text x="92" y="61" class="section">企业用户</text>
+
+      <text x="34" y="126" class="label">对话式工作台</text>
+      <g transform="translate(34 147)">
+        <rect width="232" height="54" rx="14" fill="#17375f"/>
+        <circle cx="24" cy="27" r="7" fill="#38bdf8"/>
+        <text x="44" y="33" class="small">描述查询或变更目标</text>
+      </g>
+      <g transform="translate(34 213)">
+        <rect width="232" height="54" rx="14" fill="#17375f"/>
+        <circle cx="24" cy="27" r="7" fill="#818cf8"/>
+        <text x="44" y="33" class="small">查看 Plan、Diff 与风险</text>
+      </g>
+      <g transform="translate(34 279)">
+        <rect width="232" height="54" rx="14" fill="#17375f"/>
+        <circle cx="24" cy="27" r="7" fill="#34d399"/>
+        <text x="44" y="33" class="small">在对话中批准或拒绝</text>
+      </g>
+      <text x="150" y="365" text-anchor="middle" class="tiny">HTTP 命令 · SSE 实时事件</text>
+    </g>
+
+    <!-- Main agent -->
+    <g filter="url(#shadow)" transform="translate(440 170)">
+      <rect width="700" height="500" rx="36" fill="#111d39" stroke="#818cf8" stroke-opacity="0.5" stroke-width="2"/>
+      <rect width="700" height="92" rx="36" fill="url(#agent)"/>
+      <path d="M0 60h700v32H0z" fill="url(#agent)"/>
+      <text x="38" y="57" class="section">Gateway Agent</text>
+      <text x="660" y="56" text-anchor="end" class="small" fill="#ede9fe">apiserver + worker</text>
+
+      <g transform="translate(34 120)">
+        <rect width="632" height="76" rx="20" fill="#17284b" stroke="#60a5fa" stroke-opacity="0.24"/>
+        <text x="26" y="31" class="label">理解与上下文</text>
+        <text x="26" y="57" class="small">输入规范化 · 意图识别 · Conversation Memory · Qdrant 检索</text>
+      </g>
+
+      <g transform="translate(34 214)">
+        <rect width="300" height="112" rx="20" fill="#1b2852" stroke="#a78bfa" stroke-opacity="0.3"/>
+        <text x="24" y="34" class="label">计划与推理</text>
+        <text x="24" y="63" class="small">Plan / Replan</text>
+        <text x="24" y="89" class="small">TAO / ReAct · Eino</text>
+      </g>
+      <g transform="translate(366 214)">
+        <rect width="300" height="112" rx="20" fill="#1c304d" stroke="#34d399" stroke-opacity="0.3"/>
+        <text x="24" y="34" class="label">治理与控制</text>
+        <text x="24" y="63" class="small">风险策略 · 对话审批</text>
+        <text x="24" y="89" class="small">预算 · 循环检测 · 人工接管</text>
+      </g>
+
+      <g transform="translate(34 344)">
+        <rect width="632" height="104" rx="20" fill="#17284b" stroke="#f59e0b" stroke-opacity="0.3"/>
+        <text x="26" y="34" class="label">受控执行运行时</text>
+        <text x="26" y="63" class="small">Native Tool · Skill · MCP Tool · Temporal Activity</text>
+        <text x="26" y="87" class="tiny">Schema 校验 → 权限 → 审批 → 执行 → 验证 → Observation / 回滚</text>
+      </g>
+    </g>
+
+    <!-- Gateway -->
+    <g filter="url(#shadow)" transform="translate(1210 205)">
+      <rect width="320" height="390" rx="30" fill="#0c2b2c" stroke="#34d399" stroke-opacity="0.5"/>
+      <rect x="20" y="20" width="280" height="68" rx="20" fill="url(#gateway)"/>
+      <path d="M49 44h23l10 10-10 10H49L39 54z" fill="#ecfdf5" opacity="0.95"/>
+      <circle cx="58" cy="54" r="5" fill="#059669"/>
+      <text x="94" y="61" class="section">逻辑 Gateway</text>
+
+      <text x="34" y="129" class="label">固定绑定的目标</text>
+      <g transform="translate(34 151)">
+        <rect width="252" height="54" rx="14" fill="#123e3e"/>
+        <text x="22" y="33" class="small">Higress 控制面与配置</text>
+      </g>
+      <g transform="translate(34 217)">
+        <rect width="252" height="54" rx="14" fill="#123e3e"/>
+        <text x="22" y="33" class="small">Kubernetes ServiceAccount</text>
+      </g>
+      <g transform="translate(34 283)">
+        <rect width="252" height="54" rx="14" fill="#123e3e"/>
+        <text x="22" y="33" class="small">路由 · 后端 · 模型 · 插件</text>
+      </g>
+      <text x="160" y="365" text-anchor="middle" class="tiny">多 Pod 属于同一逻辑 Gateway</text>
+    </g>
+
+    <!-- Arrows -->
+    <path d="M370 350 C400 350 410 350 432 350" fill="none" stroke="#60a5fa" stroke-width="4" marker-end="url(#arrowBlue)"/>
+    <path d="M440 430 C410 430 400 430 378 430" fill="none" stroke="#60a5fa" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.8"/>
+    <text x="405" y="327" text-anchor="middle" class="tiny">请求</text>
+    <text x="405" y="459" text-anchor="middle" class="tiny">事件 / 审批卡片</text>
+
+    <path d="M1140 350 C1166 350 1176 350 1202 350" fill="none" stroke="#34d399" stroke-width="4" marker-end="url(#arrowGreen)"/>
+    <path d="M1210 430 C1180 430 1170 430 1148 430" fill="none" stroke="#34d399" stroke-width="3" stroke-dasharray="7 7" marker-end="url(#arrowGreen)" opacity="0.85"/>
+    <text x="1175" y="327" text-anchor="middle" class="tiny">受控 Tool</text>
+    <text x="1175" y="459" text-anchor="middle" class="tiny">真实状态 / 证据</text>
+
+    <!-- Infrastructure bar -->
+    <g filter="url(#soft)" transform="translate(120 725)">
+      <rect width="1360" height="118" rx="28" fill="#0d1930" stroke="#334155"/>
+      <text x="30" y="35" class="label">可靠运行底座</text>
+
+      <g transform="translate(200 24)">
+        <rect width="200" height="70" rx="18" fill="#172554" stroke="#60a5fa" stroke-opacity="0.35"/>
+        <text x="100" y="31" text-anchor="middle" class="label">MySQL 8.4</text>
+        <text x="100" y="54" text-anchor="middle" class="tiny">业务事实 · Event · Outbox</text>
+      </g>
+      <g transform="translate(420 24)">
+        <rect width="190" height="70" rx="18" fill="#3b1720" stroke="#fb7185" stroke-opacity="0.35"/>
+        <text x="95" y="31" text-anchor="middle" class="label">Redis</text>
+        <text x="95" y="54" text-anchor="middle" class="tiny">SSE 通知 · 缓存 · 限流</text>
+      </g>
+      <g transform="translate(630 24)">
+        <rect width="200" height="70" rx="18" fill="#2e1a47" stroke="#c084fc" stroke-opacity="0.35"/>
+        <text x="100" y="31" text-anchor="middle" class="label">Temporal</text>
+        <text x="100" y="54" text-anchor="middle" class="tiny">长任务 · 等待 · 恢复</text>
+      </g>
+      <g transform="translate(850 24)">
+        <rect width="200" height="70" rx="18" fill="#123b3b" stroke="#2dd4bf" stroke-opacity="0.35"/>
+        <text x="100" y="31" text-anchor="middle" class="label">Qdrant</text>
+        <text x="100" y="54" text-anchor="middle" class="tiny">历史细节 · 知识召回</text>
+      </g>
+      <g transform="translate(1070 24)">
+        <rect width="170" height="70" rx="18" fill="#3d2c12" stroke="#fbbf24" stroke-opacity="0.35"/>
+        <text x="85" y="31" text-anchor="middle" class="label">S3 / MinIO</text>
+        <text x="85" y="54" text-anchor="middle" class="tiny">文档与证据（可选）</text>
+      </g>
+    </g>
+
+    <text x="800" y="878" text-anchor="middle" class="tiny">MySQL 是唯一业务事实来源 · Redis 与 Qdrant 数据均可补偿或重建 · 所有写操作可审计</text>
+  </g>
+</svg>
