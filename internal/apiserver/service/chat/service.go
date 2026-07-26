@@ -22,9 +22,10 @@ const (
 
 // Chat 是 Chat API 使用的对话模型
 type Chat struct {
-	ID        uint64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            uint64
+	ModelConfigID *uint64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // Message 是 Chat API 使用的消息模型
@@ -51,9 +52,9 @@ func (r MessageRole) Valid() bool {
 	return r == MessageRoleUser || r == MessageRoleAssistant
 }
 
-// CreateChat 创建一个空对话
-func (s *Service) CreateChat(ctx context.Context) (Chat, error) {
-	record, err := s.store.CreateChat(ctx)
+// CreateChat 创建对话；modelConfigID 为空时使用系统默认模型配置
+func (s *Service) CreateChat(ctx context.Context, modelConfigID *uint64) (Chat, error) {
+	record, err := s.store.CreateChat(ctx, modelConfigID)
 	if err != nil {
 		return Chat{}, err
 	}
@@ -107,9 +108,10 @@ func (s *Service) ListMessages(ctx context.Context, chatID, afterID uint64, limi
 
 func toChat(record mysqlstore.Chat) Chat {
 	return Chat{
-		ID:        record.ID,
-		CreatedAt: record.CreatedAt,
-		UpdatedAt: record.UpdatedAt,
+		ID:            record.ID,
+		ModelConfigID: record.ModelConfigID,
+		CreatedAt:     record.CreatedAt,
+		UpdatedAt:     record.UpdatedAt,
 	}
 }
 

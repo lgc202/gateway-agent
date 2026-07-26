@@ -5,7 +5,6 @@
 package sqlc
 
 import (
-	"database/sql"
 	"time"
 )
 
@@ -14,7 +13,7 @@ type Chat struct {
 	// 对话唯一标识
 	ID uint64 `json:"id"`
 	// 当前对话选择的模型配置，NULL 表示使用系统默认配置
-	ModelConfigID sql.NullInt64 `json:"model_config_id"`
+	ModelConfigID *uint64 `json:"model_config_id"`
 	// 对话创建时间
 	CreatedAt time.Time `json:"created_at"`
 	// 对话最后活跃时间

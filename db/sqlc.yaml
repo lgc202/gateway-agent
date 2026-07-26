@@ -12,6 +12,10 @@ sql:
         emit_json_tags: true
         emit_empty_slices: true
         overrides:
+          - column: chats.model_config_id
+            go_type:
+              type: uint64
+              pointer: true
           - column: model_configs.api_key
             go_type:
               type: byte

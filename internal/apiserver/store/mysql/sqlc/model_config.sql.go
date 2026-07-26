@@ -17,7 +17,7 @@ FROM chats
 WHERE model_config_id = ?
 `
 
-func (q *Queries) CountChatsByModelConfigID(ctx context.Context, modelConfigID sql.NullInt64) (int64, error) {
+func (q *Queries) CountChatsByModelConfigID(ctx context.Context, modelConfigID *uint64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countChatsByModelConfigID, modelConfigID)
 	var count int64
 	err := row.Scan(&count)

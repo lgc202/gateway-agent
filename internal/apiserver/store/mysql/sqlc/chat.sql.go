@@ -42,11 +42,12 @@ func (q *Queries) GetChatForUpdate(ctx context.Context, id uint64) (uint64, erro
 }
 
 const insertChat = `-- name: InsertChat :execresult
-INSERT INTO chats () VALUES ()
+INSERT INTO chats (model_config_id)
+VALUES (?)
 `
 
-func (q *Queries) InsertChat(ctx context.Context) (sql.Result, error) {
-	return q.db.ExecContext(ctx, insertChat)
+func (q *Queries) InsertChat(ctx context.Context, modelConfigID *uint64) (sql.Result, error) {
+	return q.db.ExecContext(ctx, insertChat, modelConfigID)
 }
 
 const touchChat = `-- name: TouchChat :execrows

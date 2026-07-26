@@ -12,9 +12,10 @@ import (
 
 // Chat 是 Store 返回给用例层的对话记录
 type Chat struct {
-	ID        uint64
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            uint64
+	ModelConfigID *uint64
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // Message 是 Store 返回给用例层的消息记录
@@ -26,12 +27,18 @@ type Message struct {
 	CreatedAt time.Time
 }
 
-// CreateChat 创建一个空对话
-func (s *Store) CreateChat(ctx context.Context) (Chat, error) {
+// CreateChat 创建对话，并保存本次对话固定使用的模型配置
+func (s *Store) CreateChat(ctx context.Context, modelConfigID *uint64) (Chat, error) {
 	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
 	defer cancel()
 
-	result, err := s.queries.InsertChat(ctx)
+	if modelConfigID != nil {
+		if _, err := s.GetModelConfig(ctx, *modelConfigID); err != nil {
+			return Chat{}, err
+		}
+	}
+
+	result, err := s.queries.InsertChat(ctx, modelConfigID)
 	if err != nil {
 		return Chat{}, databaseError(err)
 	}
@@ -147,9 +154,10 @@ func mapChatQueryError(err error) error {
 
 func toChat(record sqlc.Chat) Chat {
 	return Chat{
-		ID:        record.ID,
-		CreatedAt: record.CreatedAt,
-		UpdatedAt: record.UpdatedAt,
+		ID:            record.ID,
+		ModelConfigID: record.ModelConfigID,
+		CreatedAt:     record.CreatedAt,
+		UpdatedAt:     record.UpdatedAt,
 	}
 }
 

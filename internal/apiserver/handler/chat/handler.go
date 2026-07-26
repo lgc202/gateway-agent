@@ -26,14 +26,19 @@ const (
 	maxRequestBodyBytes = 384 * 1024
 )
 
+type createChatRequest struct {
+	ModelConfigID *uint64 `json:"model_config_id"`
+}
+
 type appendMessageRequest struct {
 	Content string `json:"content"`
 }
 
 type chatResponse struct {
-	ID        uint64    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            uint64    `json:"id"`
+	ModelConfigID *uint64   `json:"model_config_id"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type messageResponse struct {
@@ -47,6 +52,13 @@ type messageResponse struct {
 type messagePageResponse struct {
 	Items       []messageResponse `json:"items"`
 	NextAfterID uint64            `json:"next_after_id"`
+}
+
+func (r createChatRequest) Validate() error {
+	if r.ModelConfigID != nil && *r.ModelConfigID == 0 {
+		return errorsx.NewUser(errorsx.CodeInvalidRequest, "model_config_id 必须是大于 0 的整数")
+	}
+	return nil
 }
 
 // Handler 处理 Chat 和 Message HTTP 请求
@@ -68,7 +80,17 @@ func (h *Handler) Register(router *gin.RouterGroup) {
 }
 
 func (h *Handler) createChat(ctx *gin.Context) {
-	chat, err := h.service.CreateChat(ctx.Request.Context())
+	var req createChatRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		response.WriteError(ctx, errorsx.NewUser(errorsx.CodeInvalidRequest, "请求体格式错误"))
+		return
+	}
+	if err := req.Validate(); err != nil {
+		response.WriteError(ctx, err)
+		return
+	}
+
+	chat, err := h.service.CreateChat(ctx.Request.Context(), req.ModelConfigID)
 	if err != nil {
 		response.WriteError(ctx, err)
 		return
@@ -299,9 +321,10 @@ func parseLimit(value string) (int32, error) {
 
 func toChatResponse(chat chatservice.Chat) chatResponse {
 	return chatResponse{
-		ID:        chat.ID,
-		CreatedAt: chat.CreatedAt,
-		UpdatedAt: chat.UpdatedAt,
+		ID:            chat.ID,
+		ModelConfigID: chat.ModelConfigID,
+		CreatedAt:     chat.CreatedAt,
+		UpdatedAt:     chat.UpdatedAt,
 	}
 }
 

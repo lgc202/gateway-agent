@@ -135,10 +135,7 @@ func (s *Store) DeleteModelConfig(ctx context.Context, id uint64) error {
 	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
 	defer cancel()
 
-	chatCount, err := s.queries.CountChatsByModelConfigID(ctx, sql.NullInt64{
-		Int64: int64(id),
-		Valid: true,
-	})
+	chatCount, err := s.queries.CountChatsByModelConfigID(ctx, &id)
 	if err != nil {
 		return databaseError(err)
 	}

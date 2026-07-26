@@ -1,5 +1,6 @@
 -- name: InsertChat :execresult
-INSERT INTO chats () VALUES ();
+INSERT INTO chats (model_config_id)
+VALUES (?);
 
 -- name: GetChat :one
 SELECT id, model_config_id, created_at, updated_at
