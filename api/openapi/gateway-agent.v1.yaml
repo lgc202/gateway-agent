@@ -2,118 +2,361 @@ openapi: 3.1.0
 info:
   title: Gateway Agent API
   version: 1.0.0
-  description: Gateway Agent 当前提供的 Chat 与 Message 基础 API
+  description: |
+    Gateway Agent 当前提供的 Chat、Message、模型配置和路由审批 API。
+    发送消息和决定审批直接返回 SSE；其他接口使用统一的 code、message、data JSON 响应。
 servers:
   - url: http://127.0.0.1:8080
 tags:
   - name: Health
+    description: 进程与依赖健康检查
+  - name: ModelConfigs
+    description: Agent 模型配置管理
   - name: Chats
+    description: Chat、Message 与 Agent 流式回复
+  - name: Approvals
+    description: 对话内写操作审批
+
 paths:
   /healthz:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
     get:
       tags: [Health]
       operationId: getHealth
       summary: 检查进程是否存活
       responses:
         "200":
-          $ref: "#/components/responses/HealthResponse"
+          $ref: "#/components/responses/StatusResponse"
         "500":
           $ref: "#/components/responses/InternalError"
+
   /readyz:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
     get:
       tags: [Health]
       operationId: getReadiness
       summary: 检查 MySQL 是否可用
       responses:
         "200":
-          $ref: "#/components/responses/ReadinessResponse"
+          $ref: "#/components/responses/StatusResponse"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
         "500":
           $ref: "#/components/responses/InternalError"
+
+  /api/v1/model-configs:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
+    get:
+      tags: [ModelConfigs]
+      operationId: listModelConfigs
+      summary: 查询全部模型配置
+      responses:
+        "200":
+          $ref: "#/components/responses/ModelConfigListResponse"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [ModelConfigs]
+      operationId: createModelConfig
+      summary: 创建模型配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateModelConfigRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/ModelConfigResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/model-configs/{model_config_id}:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
+      - $ref: "#/components/parameters/ModelConfigID"
+    get:
+      tags: [ModelConfigs]
+      operationId: getModelConfig
+      summary: 查询单个模型配置
+      responses:
+        "200":
+          $ref: "#/components/responses/ModelConfigResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [ModelConfigs]
+      operationId: updateModelConfig
+      summary: 更新模型配置基本信息
+      description: 不修改已经保存的 API Key。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModelConfigRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/ModelConfigResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [ModelConfigs]
+      operationId: deleteModelConfig
+      summary: 删除模型配置
+      description: 已被 Chat 使用的模型配置不能删除。
+      responses:
+        "200":
+          $ref: "#/components/responses/EmptySuccessResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/model-configs/{model_config_id}/api-key:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
+      - $ref: "#/components/parameters/ModelConfigID"
+    put:
+      tags: [ModelConfigs]
+      operationId: updateModelConfigAPIKey
+      summary: 替换或清除模型 API Key
+      description: 传入空字符串时清除已有 API Key；请求体必须明确包含 api_key 字段。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateModelConfigAPIKeyRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/ModelConfigResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /api/v1/chats:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
     post:
       tags: [Chats]
       operationId: createChat
-      summary: 创建空对话
+      summary: 创建 Chat
+      description: model_config_id 为空或缺失时使用系统默认模型。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChatRequest"
       responses:
         "201":
-          $ref: "#/components/responses/ChatCreated"
+          $ref: "#/components/responses/ChatResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
         "500":
           $ref: "#/components/responses/InternalError"
+
   /api/v1/chats/{chat_id}:
     parameters:
+      - $ref: "#/components/parameters/RequestID"
       - $ref: "#/components/parameters/ChatID"
     get:
       tags: [Chats]
       operationId: getChat
-      summary: 查询对话
+      summary: 查询 Chat
       responses:
         "200":
           $ref: "#/components/responses/ChatResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
         "404":
-          $ref: "#/components/responses/ChatNotFound"
+          $ref: "#/components/responses/NotFound"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
         "500":
           $ref: "#/components/responses/InternalError"
+
   /api/v1/chats/{chat_id}/messages:
     parameters:
+      - $ref: "#/components/parameters/RequestID"
       - $ref: "#/components/parameters/ChatID"
-    post:
-      tags: [Chats]
-      operationId: appendUserMessage
-      summary: 追加用户消息
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AppendMessageRequest"
-      responses:
-        "201":
-          $ref: "#/components/responses/MessageCreated"
-        "400":
-          $ref: "#/components/responses/InvalidMessage"
-        "404":
-          $ref: "#/components/responses/ChatNotFound"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "500":
-          $ref: "#/components/responses/InternalError"
     get:
       tags: [Chats]
       operationId: listChatMessages
-      summary: 按游标查询对话消息
+      summary: 按消息 ID 游标查询 Chat 历史
       parameters:
         - $ref: "#/components/parameters/AfterID"
         - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          $ref: "#/components/responses/MessagePageResponse"
+          $ref: "#/components/responses/MessageListResponse"
         "400":
           $ref: "#/components/responses/InvalidRequest"
         "404":
-          $ref: "#/components/responses/ChatNotFound"
+          $ref: "#/components/responses/NotFound"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
         "500":
           $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Chats]
+      operationId: sendChatMessage
+      summary: 发送用户消息并流式返回 Agent 事件
+      description: |
+        用户消息先写入 MySQL，随后在同一响应中返回 SSE。
+        可能的事件名为 text_delta、completed、approval_required 和 error。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentStreamResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/chats/{chat_id}/approvals:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
+      - $ref: "#/components/parameters/ChatID"
+    get:
+      tags: [Approvals]
+      operationId: listPendingApprovals
+      summary: 查询 Chat 中等待决定的审批
+      parameters:
+        - $ref: "#/components/parameters/ApprovalStatus"
+      responses:
+        "200":
+          $ref: "#/components/responses/ApprovalListResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/chats/{chat_id}/approvals/{approval_id}/decisions:
+    parameters:
+      - $ref: "#/components/parameters/RequestID"
+      - $ref: "#/components/parameters/ChatID"
+      - $ref: "#/components/parameters/ApprovalID"
+    post:
+      tags: [Approvals]
+      operationId: decideApproval
+      summary: 批准或拒绝网关写操作并恢复 Agent
+      description: |
+        审批决定保存后，从持久化 Checkpoint 恢复原 Agent 调用。
+        响应与发送消息相同，使用 text_delta、completed、approval_required 或 error SSE 事件。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideApprovalRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentStreamResponse"
+        "400":
+          $ref: "#/components/responses/InvalidRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   parameters:
+    RequestID:
+      name: X-Request-ID
+      in: header
+      required: false
+      description: 可选的调用方请求 ID；缺失、重复或不符合格式时由服务端重新生成。
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]{1,128}$'
     ChatID:
       name: chat_id
       in: path
       required: true
-      description: 对话 ID
+      description: Chat ID
       schema:
         type: integer
+        format: uint64
         minimum: 1
-        maximum: 18446744073709551615
+    ModelConfigID:
+      name: model_config_id
+      in: path
+      required: true
+      description: 模型配置 ID
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
+    ApprovalID:
+      name: approval_id
+      in: path
+      required: true
+      description: Approval ID
+      schema:
+        type: integer
+        format: uint64
+        minimum: 1
     AfterID:
       name: after_id
       in: query
@@ -121,41 +364,69 @@ components:
       description: 只返回 ID 大于该值的消息
       schema:
         type: integer
+        format: uint64
         minimum: 0
-        maximum: 18446744073709551615
         default: 0
     Limit:
       name: limit
       in: query
       required: false
-      description: 单次返回数量
+      description: 单次返回消息数量
       schema:
         type: integer
         format: int32
         minimum: 1
         maximum: 200
         default: 50
+    ApprovalStatus:
+      name: status
+      in: query
+      required: false
+      description: 当前只支持查询 pending Approval
+      schema:
+        type: string
+        enum: [pending]
+        default: pending
+
   headers:
     RequestID:
       description: 当前请求的追踪 ID
       schema:
         type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[A-Za-z0-9._-]{1,128}$'
+
   schemas:
+    Status:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, ready]
+
     Chat:
       type: object
       additionalProperties: false
-      required: [id, created_at, updated_at]
+      required: [id, model_config_id, created_at, updated_at]
       properties:
         id:
           type: integer
+          format: uint64
           minimum: 1
-          maximum: 18446744073709551615
+        model_config_id:
+          type: [integer, "null"]
+          format: uint64
+          minimum: 1
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+
     Message:
       type: object
       additionalProperties: false
@@ -163,12 +434,12 @@ components:
       properties:
         id:
           type: integer
+          format: uint64
           minimum: 1
-          maximum: 18446744073709551615
         chat_id:
           type: integer
+          format: uint64
           minimum: 1
-          maximum: 18446744073709551615
         role:
           type: string
           enum: [user, assistant]
@@ -177,7 +448,8 @@ components:
         created_at:
           type: string
           format: date-time
-    MessagePage:
+
+    MessageList:
       type: object
       additionalProperties: false
       required: [items, next_after_id]
@@ -188,54 +460,184 @@ components:
             $ref: "#/components/schemas/Message"
         next_after_id:
           type: integer
+          format: uint64
           minimum: 0
-          maximum: 18446744073709551615
-    Status:
+
+    ModelConfig:
       type: object
       additionalProperties: false
-      required: [status]
+      required:
+        - id
+        - name
+        - provider
+        - model
+        - base_url
+        - max_tokens
+        - api_key_configured
+        - created_at
+        - updated_at
       properties:
+        id:
+          type: integer
+          format: uint64
+          minimum: 1
+        name:
+          type: string
+          maxLength: 64
+        provider:
+          $ref: "#/components/schemas/ModelProvider"
+        model:
+          type: string
+          maxLength: 255
+        base_url:
+          type: string
+          maxLength: 2048
+        max_tokens:
+          type: integer
+          format: uint32
+          minimum: 1
+        api_key_configured:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Approval:
+      type: object
+      additionalProperties: false
+      required: [id, chat_id, status, operation, arguments, created_at]
+      properties:
+        id:
+          type: integer
+          format: uint64
+          minimum: 1
+        chat_id:
+          type: integer
+          format: uint64
+          minimum: 1
         status:
           type: string
-    AppendMessageRequest:
+          enum: [pending, approved, rejected]
+        operation:
+          type: string
+          example: create_route
+        arguments:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+
+    ApprovalList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Approval"
+
+    TextDelta:
       type: object
       additionalProperties: false
       required: [content]
       properties:
         content:
           type: string
-          description: UTF-8 字节长度不能超过 60 KiB，去除首尾空白后不能为空
-    ChatEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/SuccessEnvelope"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/Chat"
-    MessageEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/SuccessEnvelope"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/Message"
-    MessagePageEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/SuccessEnvelope"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/MessagePage"
-    StatusEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/SuccessEnvelope"
-        - type: object
-          properties:
-            data:
-              $ref: "#/components/schemas/Status"
+
+    CreateChatRequest:
+      type: object
+      properties:
+        model_config_id:
+          type: [integer, "null"]
+          format: uint64
+          minimum: 1
+
+    SendMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: 去除首尾空白后不能为空，UTF-8 字节长度不能超过 60 KiB。
+
+    ModelProvider:
+      type: string
+      enum: [openai, deepseek, qwen, claude, gemini, ollama, ark]
+
+    CreateModelConfigRequest:
+      type: object
+      required: [name, provider, model, max_tokens]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        provider:
+          $ref: "#/components/schemas/ModelProvider"
+        model:
+          type: string
+          minLength: 1
+          maxLength: 255
+        base_url:
+          type: string
+          maxLength: 2048
+          description: 空字符串表示使用 Provider 默认地址。
+        api_key:
+          type: string
+          description: 最多 2020 UTF-8 字节；空字符串表示不保存密钥。
+        max_tokens:
+          type: integer
+          format: uint32
+          minimum: 1
+
+    UpdateModelConfigRequest:
+      type: object
+      required: [name, provider, model, max_tokens]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        provider:
+          $ref: "#/components/schemas/ModelProvider"
+        model:
+          type: string
+          minLength: 1
+          maxLength: 255
+        base_url:
+          type: string
+          maxLength: 2048
+        max_tokens:
+          type: integer
+          format: uint32
+          minimum: 1
+
+    UpdateModelConfigAPIKeyRequest:
+      type: object
+      required: [api_key]
+      properties:
+        api_key:
+          type: string
+          description: 空字符串表示清除已有 API Key，最多 2020 UTF-8 字节。
+
+    DecideApprovalRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approved, rejected]
+        reason:
+          type: string
+          description: 可选的批准或拒绝原因。
+
     SuccessEnvelope:
       type: object
-      additionalProperties: false
       required: [code, message, data]
       properties:
         code:
@@ -245,6 +647,7 @@ components:
           type: string
           const: success
         data: {}
+
     ErrorEnvelope:
       type: object
       additionalProperties: false
@@ -254,34 +657,46 @@ components:
           type: string
           enum:
             - INVALID_REQUEST
-            - CHAT_NOT_FOUND
             - INVALID_MESSAGE_CONTENT
+            - CHAT_NOT_FOUND
+            - MODEL_CONFIG_NOT_FOUND
+            - MODEL_CONFIG_NAME_CONFLICT
+            - MODEL_CONFIG_IN_USE
+            - APPROVAL_NOT_FOUND
+            - APPROVAL_ALREADY_DECIDED
             - INTERNAL_ERROR
         message:
           type: string
         data:
           type: "null"
+
     InvalidRequestEnvelope:
       allOf:
         - $ref: "#/components/schemas/ErrorEnvelope"
         - type: object
           properties:
             code:
-              const: INVALID_REQUEST
-    InvalidMessageEnvelope:
-      allOf:
-        - $ref: "#/components/schemas/ErrorEnvelope"
-        - type: object
-          properties:
-            code:
               enum: [INVALID_REQUEST, INVALID_MESSAGE_CONTENT]
-    ChatNotFoundEnvelope:
+
+    NotFoundEnvelope:
       allOf:
         - $ref: "#/components/schemas/ErrorEnvelope"
         - type: object
           properties:
             code:
-              const: CHAT_NOT_FOUND
+              enum: [CHAT_NOT_FOUND, MODEL_CONFIG_NOT_FOUND, APPROVAL_NOT_FOUND]
+
+    ConflictEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/ErrorEnvelope"
+        - type: object
+          properties:
+            code:
+              enum:
+                - MODEL_CONFIG_NAME_CONFLICT
+                - MODEL_CONFIG_IN_USE
+                - APPROVAL_ALREADY_DECIDED
+
     InternalErrorEnvelope:
       allOf:
         - $ref: "#/components/schemas/ErrorEnvelope"
@@ -289,9 +704,68 @@ components:
           properties:
             code:
               const: INTERNAL_ERROR
+
+    StatusEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Status"
+
+    ChatEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Chat"
+
+    MessageListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MessageList"
+
+    ModelConfigEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ModelConfig"
+
+    ModelConfigListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/ModelConfig"
+
+    ApprovalListEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/ApprovalList"
+
+    EmptySuccessEnvelope:
+      allOf:
+        - $ref: "#/components/schemas/SuccessEnvelope"
+        - type: object
+          properties:
+            data:
+              type: "null"
+
   responses:
-    HealthResponse:
-      description: 进程存活
+    StatusResponse:
+      description: 服务状态正常
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
@@ -299,26 +773,9 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/StatusEnvelope"
-    ReadinessResponse:
-      description: 服务已就绪
-      headers:
-        X-Request-ID:
-          $ref: "#/components/headers/RequestID"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/StatusEnvelope"
-    ChatCreated:
-      description: 对话已创建
-      headers:
-        X-Request-ID:
-          $ref: "#/components/headers/RequestID"
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ChatEnvelope"
+
     ChatResponse:
-      description: 对话
+      description: Chat 响应
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
@@ -326,26 +783,93 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ChatEnvelope"
-    MessageCreated:
-      description: 消息已创建
+
+    MessageListResponse:
+      description: Message 游标列表
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/MessageEnvelope"
-    MessagePageResponse:
-      description: 消息分页结果
+            $ref: "#/components/schemas/MessageListEnvelope"
+
+    ModelConfigResponse:
+      description: 不包含 API Key 的模型配置
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/MessagePageEnvelope"
+            $ref: "#/components/schemas/ModelConfigEnvelope"
+
+    ModelConfigListResponse:
+      description: 不包含 API Key 的模型配置列表
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ModelConfigListEnvelope"
+
+    ApprovalListResponse:
+      description: 等待用户决定的 Approval 列表
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApprovalListEnvelope"
+
+    EmptySuccessResponse:
+      description: 操作成功且没有返回数据
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EmptySuccessEnvelope"
+
+    AgentStreamResponse:
+      description: |
+        Agent SSE 事件流。
+
+        - text_delta 的 data 符合 TextDelta；
+        - completed 的 data 符合 Message；
+        - approval_required 的 data 符合 Approval；
+        - error 的 data 符合 ErrorEnvelope，并结束当前流。
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestID"
+      content:
+        text/event-stream:
+          schema:
+            type: string
+          examples:
+            textDelta:
+              summary: 文本分片
+              value: |
+                event: text_delta
+                data: {"content":"当前匹配到"}
+
+            completed:
+              summary: 完整消息已写入 MySQL
+              value: |
+                event: completed
+                data: {"id":11,"chat_id":1,"role":"assistant","content":"当前匹配到 2 条路由。","created_at":"2026-07-26T12:00:02Z"}
+
+            approvalRequired:
+              summary: 写操作等待审批
+              value: |
+                event: approval_required
+                data: {"id":3,"chat_id":1,"status":"pending","operation":"create_route","arguments":{"name":"shop-route"},"created_at":"2026-07-26T12:00:02Z"}
+
     InvalidRequest:
-      description: 请求参数不合法
+      description: 请求参数或消息内容无效
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
@@ -353,34 +877,29 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/InvalidRequestEnvelope"
-          example:
-            code: INVALID_REQUEST
-            message: chat_id 必须是大于 0 的整数
-            data: null
-    InvalidMessage:
-      description: 请求或消息正文不合法
+
+    NotFound:
+      description: Chat、模型配置或 Approval 不存在
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/InvalidMessageEnvelope"
-    ChatNotFound:
-      description: 对话不存在
+            $ref: "#/components/schemas/NotFoundEnvelope"
+
+    Conflict:
+      description: 名称冲突、资源仍被使用或 Approval 已经决定
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ChatNotFoundEnvelope"
-          example:
-            code: CHAT_NOT_FOUND
-            message: Chat 不存在
-            data: null
+            $ref: "#/components/schemas/ConflictEnvelope"
+
     ServiceUnavailable:
-      description: MySQL 等必要依赖暂时不可用
+      description: 必要依赖暂时不可用；当前响应 code 为 INTERNAL_ERROR
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestID"
@@ -388,10 +907,7 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/InternalErrorEnvelope"
-          example:
-            code: INTERNAL_ERROR
-            message: 服务暂时不可用
-            data: null
+
     InternalError:
       description: 服务器内部错误
       headers:
@@ -401,7 +917,3 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/InternalErrorEnvelope"
-          example:
-            code: INTERNAL_ERROR
-            message: 服务器内部错误
-            data: null
