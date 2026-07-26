@@ -1,41 +1,27 @@
-// Package higress 通过 Higress Console API 读取网关配置
+// Package higress 通过 Higress Console API 管理网关配置
 package higress
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/lgc202/gateway-agent/internal/chatsvc/config"
-	gatewayservice "github.com/lgc202/gateway-agent/internal/chatsvc/service/gateway"
 )
 
 const requestTimeout = 10 * time.Second
 
-// Client 是 Higress Console 只读客户端
+// Client 是 Higress Console 客户端
 type Client struct {
 	endpoint   *url.URL
 	username   string
 	password   string
 	httpClient *http.Client
-}
-
-type routeListResponse struct {
-	Success  bool           `json:"success"`
-	Data     []higressRoute `json:"data"`
-	Total    int            `json:"total"`
-	PageNum  int            `json:"pageNum"`
-	PageSize int            `json:"pageSize"`
-}
-
-type routeResponse struct {
-	Success bool         `json:"success"`
-	Data    higressRoute `json:"data"`
 }
 
 // NewClient 创建使用 Basic Authentication 的 Higress Console 客户端
@@ -59,74 +45,38 @@ func NewClient(cfg *config.Config) (*Client, error) {
 	}, nil
 }
 
-// ListRoutes 查询 Higress 路由列表
-func (c *Client) ListRoutes(ctx context.Context, query gatewayservice.RouteQuery) (gatewayservice.RoutePage, error) {
-	requestURL := c.endpoint.JoinPath("v1", "routes")
-	values := requestURL.Query()
-	if query.Domain != "" {
-		values.Set("domainName", query.Domain)
-	}
-	if query.PageNumber > 0 {
-		values.Set("pageNum", strconv.Itoa(query.PageNumber))
-	}
-	if query.PageSize > 0 {
-		values.Set("pageSize", strconv.Itoa(query.PageSize))
-	}
-	requestURL.RawQuery = values.Encode()
-
-	var resp routeListResponse
-	if err := c.get(ctx, requestURL, &resp); err != nil {
-		return gatewayservice.RoutePage{}, err
-	}
-	if !resp.Success {
-		return gatewayservice.RoutePage{}, fmt.Errorf("higress console route query failed")
+// request 向 Higress Console 发送请求，并返回 HTTP 状态码供资源方法解释具体语义
+func (c *Client) request(ctx context.Context, method string, requestURL *url.URL, body any, result any) (int, error) {
+	var payload []byte
+	if body != nil {
+		var err error
+		payload, err = json.Marshal(body)
+		if err != nil {
+			return 0, fmt.Errorf("encode higress console request: %w", err)
+		}
 	}
 
-	return gatewayservice.RoutePage{
-		Items:      toRoutes(resp.Data),
-		Total:      resp.Total,
-		PageNumber: resp.PageNum,
-		PageSize:   resp.PageSize,
-	}, nil
-}
-
-// GetRoute 按名称查询一条 Higress 路由
-func (c *Client) GetRoute(ctx context.Context, name string) (gatewayservice.Route, error) {
-	requestURL := c.endpoint.JoinPath("v1", "routes", name)
-
-	var resp routeResponse
-	if err := c.get(ctx, requestURL, &resp); err != nil {
-		return gatewayservice.Route{}, err
-	}
-	if !resp.Success {
-		return gatewayservice.Route{}, fmt.Errorf("higress console route query failed")
-	}
-
-	return toRoute(resp.Data), nil
-}
-
-func (c *Client) get(ctx context.Context, requestURL *url.URL, result any) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, method, requestURL.String(), bytes.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("create higress console request: %w", err)
+		return 0, fmt.Errorf("create higress console request: %w", err)
 	}
 	req.SetBasicAuth(c.username, c.password)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request higress console: %w", err)
+		return 0, fmt.Errorf("request higress console: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
-		return gatewayservice.ErrRouteNotFound
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("higress console returned HTTP status %d", resp.StatusCode)
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return resp.StatusCode, fmt.Errorf("higress console returned HTTP status %d", resp.StatusCode)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
-		return fmt.Errorf("decode higress console response: %w", err)
+		return resp.StatusCode, fmt.Errorf("decode higress console response: %w", err)
 	}
 
-	return nil
+	return resp.StatusCode, nil
 }

@@ -15,6 +15,11 @@ type RouteReader interface {
 	GetRoute(context.Context, string) (Route, error)
 }
 
+// RouteWriter 提供 Agent 当前需要的路由变更能力
+type RouteWriter interface {
+	CreateRoute(context.Context, Route) (Route, error)
+}
+
 // RouteQuery 是路由列表查询条件
 type RouteQuery struct {
 	Domain     string `json:"domain,omitempty"`
