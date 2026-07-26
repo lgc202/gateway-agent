@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -26,7 +27,9 @@ Gateway 实时状态必须通过 Tool 查询。
 
 // Agent 使用 Eino 执行模型调用，并隐藏 Eino 的运行时协议。
 type Agent struct {
-	runner *adk.Runner
+	runner          *adk.Runner
+	checkpointID    string
+	checkpointStore *checkpointStore
 }
 
 // New 创建可流式输出的 Gateway Agent。
@@ -50,11 +53,15 @@ func New(
 		return nil, fmt.Errorf("create chat model agent: %w", err)
 	}
 
+	checkpointStore := newCheckpointStore()
 	return &Agent{
 		runner: adk.NewRunner(ctx, adk.RunnerConfig{
 			Agent:           chatModelAgent,
 			EnableStreaming: true,
+			CheckPointStore: checkpointStore,
 		}),
+		checkpointID:    rand.Text(),
+		checkpointStore: checkpointStore,
 	}, nil
 }
 
@@ -72,7 +79,7 @@ func (a *Agent) Stream(ctx context.Context, messages []Message) iter.Seq2[Event,
 		runCtx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		iterator := a.runner.Run(runCtx, einoMessages)
+		iterator := a.runner.Run(runCtx, einoMessages, adk.WithCheckPointID(a.checkpointID))
 		var finalContent string
 		var completed bool
 
@@ -84,6 +91,15 @@ func (a *Agent) Stream(ctx context.Context, messages []Message) iter.Seq2[Event,
 			}
 			if event.Err != nil {
 				yield(Event{}, event.Err)
+				return
+			}
+			if event.Action != nil && event.Action.Interrupted != nil {
+				approvalEvent, err := a.approvalEvent(runCtx, event.Action.Interrupted)
+				if err != nil {
+					yield(Event{}, err)
+					return
+				}
+				yield(approvalEvent, nil)
 				return
 			}
 			if event.Output == nil || event.Output.MessageOutput == nil {

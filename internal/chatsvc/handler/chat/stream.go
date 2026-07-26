@@ -39,6 +39,8 @@ func streamReply(ctx *gin.Context, events iter.Seq2[chatservice.ReplyEvent, erro
 			ctx.SSEvent(string(event.Type), chatdto.NewTextDeltaResp(event.Content))
 		case chatservice.ReplyEventTypeCompleted:
 			ctx.SSEvent(string(event.Type), chatdto.NewMessageResp(*event.Message))
+		case chatservice.ReplyEventTypeApprovalRequired:
+			ctx.SSEvent(string(event.Type), chatdto.NewApprovalResp(*event.Approval))
 		}
 		ctx.Writer.Flush()
 	}

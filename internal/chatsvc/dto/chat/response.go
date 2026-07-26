@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"time"
 
 	chatservice "github.com/lgc202/gateway-agent/internal/chatsvc/service/chat"
@@ -32,6 +33,16 @@ type MessageListResp struct {
 // TextDeltaResp 是模型新增文本片段的 SSE 响应
 type TextDeltaResp struct {
 	Content string `json:"content"`
+}
+
+// ApprovalResp 是等待用户决定的网关写操作响应
+type ApprovalResp struct {
+	ID        uint64                     `json:"id"`
+	ChatID    uint64                     `json:"chat_id"`
+	Status    chatservice.ApprovalStatus `json:"status"`
+	Operation string                     `json:"operation"`
+	Arguments json.RawMessage            `json:"arguments"`
+	CreatedAt time.Time                  `json:"created_at"`
 }
 
 // NewChatResp 根据用例层对话构造 HTTP 响应
@@ -71,4 +82,16 @@ func NewMessageListResp(messages []chatservice.Message, afterID uint64) MessageL
 // NewTextDeltaResp 构造模型新增文本片段响应
 func NewTextDeltaResp(content string) TextDeltaResp {
 	return TextDeltaResp{Content: content}
+}
+
+// NewApprovalResp 根据用例层审批记录构造 SSE 响应
+func NewApprovalResp(value chatservice.Approval) ApprovalResp {
+	return ApprovalResp{
+		ID:        value.ID,
+		ChatID:    value.ChatID,
+		Status:    value.Status,
+		Operation: value.Operation,
+		Arguments: value.Arguments,
+		CreatedAt: value.CreatedAt,
+	}
 }

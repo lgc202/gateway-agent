@@ -17,13 +17,16 @@ const (
 	ReplyEventTypeTextDelta ReplyEventType = "text_delta"
 	// ReplyEventTypeCompleted 表示完整回复已经写入 MySQL
 	ReplyEventTypeCompleted ReplyEventType = "completed"
+	// ReplyEventTypeApprovalRequired 表示 Agent 写操作已经保存并等待用户审批
+	ReplyEventTypeApprovalRequired ReplyEventType = "approval_required"
 )
 
 // ReplyEvent 是 Chat Service 输出给 HTTP SSE 的稳定事件
 type ReplyEvent struct {
-	Type    ReplyEventType
-	Content string
-	Message *Message
+	Type     ReplyEventType
+	Content  string
+	Message  *Message
+	Approval *Approval
 }
 
 // StreamReply 保存用户消息，并基于最近的对话历史流式生成 Agent 回复
@@ -92,6 +95,15 @@ func (s *Service) streamReply(
 
 				message := toMessage(record)
 				yield(ReplyEvent{Type: ReplyEventTypeCompleted, Message: &message}, nil)
+				return
+			case agentservice.EventTypeApprovalRequired:
+				approval, err := s.createApproval(ctx, chatID, *event.Approval)
+				if err != nil {
+					yield(ReplyEvent{}, err)
+					return
+				}
+
+				yield(ReplyEvent{Type: ReplyEventTypeApprovalRequired, Approval: &approval}, nil)
 				return
 			}
 		}
