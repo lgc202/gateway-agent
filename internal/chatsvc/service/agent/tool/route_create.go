@@ -1,10 +1,10 @@
-package agent
+package tool
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/cloudwego/eino/components/tool"
+	einotool "github.com/cloudwego/eino/components/tool"
 	toolutils "github.com/cloudwego/eino/components/tool/utils"
 	"github.com/cloudwego/eino/schema"
 
@@ -39,14 +39,14 @@ type routeCreateBackendInput struct {
 	Weight int    `json:"weight" jsonschema:"required" jsonschema_description:"流量权重；多个后端的权重总和应为 100"`
 }
 
-// routeCreateApproval 是创建路由 Tool 发给审批层的信息
-type routeCreateApproval struct {
-	Operation string           `json:"operation"`
-	Arguments routeCreateInput `json:"arguments"`
+// Approval 是写操作 Tool 发给审批层的信息
+type Approval struct {
+	Operation string `json:"operation"`
+	Arguments any    `json:"arguments"`
 }
 
-// approvalDecision 是审批恢复 Tool 时携带的用户决定
-type approvalDecision struct {
+// ApprovalDecision 是审批恢复 Tool 时携带的用户决定
+type ApprovalDecision struct {
 	Approved bool   `json:"approved"`
 	Reason   string `json:"reason,omitempty"`
 }
@@ -54,22 +54,22 @@ type approvalDecision struct {
 // init 注册 Eino Checkpoint 中通过 interface 保存的具体类型
 func init() {
 	schema.Register[routeCreateInput]()
-	schema.Register[*routeCreateApproval]()
-	schema.Register[*approvalDecision]()
+	schema.Register[*Approval]()
+	schema.Register[*ApprovalDecision]()
 }
 
-// newRouteCreateTool 创建一个必须在用户批准后才会执行的路由写入 Tool
-func newRouteCreateTool(writer gatewayservice.RouteWriter) (tool.BaseTool, error) {
+// NewRouteCreate 创建一个必须在用户批准后才会执行的路由写入 Tool
+func NewRouteCreate(writer gatewayservice.RouteWriter) (einotool.BaseTool, error) {
 	return toolutils.InferTool(
 		routeCreateToolName,
 		routeCreateToolDescription,
 		func(ctx context.Context, input routeCreateInput) (string, error) {
-			wasInterrupted, _, storedInput := tool.GetInterruptState[routeCreateInput](ctx)
+			wasInterrupted, _, storedInput := einotool.GetInterruptState[routeCreateInput](ctx)
 			if !wasInterrupted {
 				return "", interruptRouteCreate(ctx, input)
 			}
 
-			isResumeTarget, hasDecision, decision := tool.GetResumeContext[*approvalDecision](ctx)
+			isResumeTarget, hasDecision, decision := einotool.GetResumeContext[*ApprovalDecision](ctx)
 			if !isResumeTarget {
 				return "", interruptRouteCreate(ctx, storedInput)
 			}
@@ -94,7 +94,7 @@ func newRouteCreateTool(writer gatewayservice.RouteWriter) (tool.BaseTool, error
 
 // interruptRouteCreate 保存原始参数，并通知 Eino 暂停本次 Agent 执行
 func interruptRouteCreate(ctx context.Context, input routeCreateInput) error {
-	return tool.StatefulInterrupt(ctx, &routeCreateApproval{
+	return einotool.StatefulInterrupt(ctx, &Approval{
 		Operation: routeCreateToolName,
 		Arguments: input,
 	}, input)

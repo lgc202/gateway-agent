@@ -7,6 +7,7 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 
 	"github.com/lgc202/gateway-agent/internal/chatsvc/config"
+	agenttool "github.com/lgc202/gateway-agent/internal/chatsvc/service/agent/tool"
 	gatewayservice "github.com/lgc202/gateway-agent/internal/chatsvc/service/gateway"
 	modelconfigservice "github.com/lgc202/gateway-agent/internal/chatsvc/service/modelconfig"
 )
@@ -25,7 +26,7 @@ func NewFactory(
 	modelConfigs *modelconfigservice.Service,
 	routeReader gatewayservice.RouteReader,
 ) (*Factory, error) {
-	routeQueryTool, err := newRouteQueryTool(routeReader)
+	routeQueryTool, err := agenttool.NewRouteQuery(routeReader)
 	if err != nil {
 		return nil, fmt.Errorf("create route query tool: %w", err)
 	}

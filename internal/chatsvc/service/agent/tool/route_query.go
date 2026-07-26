@@ -1,4 +1,5 @@
-package agent
+// Package tool 提供 Gateway Agent 可以调用的 Tool
+package tool
 
 import (
 	"context"
@@ -6,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cloudwego/eino/components/tool"
+	einotool "github.com/cloudwego/eino/components/tool"
 	toolutils "github.com/cloudwego/eino/components/tool/utils"
 
 	gatewayservice "github.com/lgc202/gateway-agent/internal/chatsvc/service/gateway"
@@ -20,6 +21,7 @@ const (
 	maxRoutePageSize          = 100
 )
 
+// routeQueryInput 是模型调用路由查询 Tool 时提交的参数
 type routeQueryInput struct {
 	Name       string `json:"name,omitempty" jsonschema_description:"精确的路由名称；已知名称时优先使用"`
 	Domain     string `json:"domain,omitempty" jsonschema_description:"路由绑定的完整域名"`
@@ -27,8 +29,8 @@ type routeQueryInput struct {
 	PageSize   int    `json:"page_size,omitempty" jsonschema_description:"每页数量，默认 20，最大 100"`
 }
 
-// newRouteQueryTool 创建只读路由查询 Tool
-func newRouteQueryTool(reader gatewayservice.RouteReader) (tool.BaseTool, error) {
+// NewRouteQuery 创建只读路由查询 Tool
+func NewRouteQuery(reader gatewayservice.RouteReader) (einotool.BaseTool, error) {
 	return toolutils.InferTool(
 		routeQueryToolName,
 		routeQueryToolDescription,
