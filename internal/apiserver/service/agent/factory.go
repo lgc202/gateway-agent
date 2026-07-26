@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudwego/eino/components/tool"
+
 	"github.com/lgc202/gateway-agent/internal/apiserver/config"
+	gatewayservice "github.com/lgc202/gateway-agent/internal/apiserver/service/gateway"
 	modelconfigservice "github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
 )
 
@@ -13,15 +16,26 @@ type Factory struct {
 	defaultModel  config.ModelConfig
 	maxIterations int
 	modelConfigs  *modelconfigservice.Service
+	tools         []tool.BaseTool
 }
 
 // NewFactory 创建 Agent Factory
-func NewFactory(cfg *config.Config, modelConfigs *modelconfigservice.Service) *Factory {
+func NewFactory(
+	cfg *config.Config,
+	modelConfigs *modelconfigservice.Service,
+	routeReader gatewayservice.RouteReader,
+) (*Factory, error) {
+	routeQueryTool, err := newRouteQueryTool(routeReader)
+	if err != nil {
+		return nil, fmt.Errorf("create route query tool: %w", err)
+	}
+
 	return &Factory{
 		defaultModel:  cfg.Model,
 		maxIterations: cfg.Agent.MaxIterations,
 		modelConfigs:  modelConfigs,
-	}
+		tools:         []tool.BaseTool{routeQueryTool},
+	}, nil
 }
 
 // New 创建使用指定模型配置的 Agent；modelConfigID 为空时使用系统默认配置
@@ -40,7 +54,7 @@ func (f *Factory) New(ctx context.Context, modelConfigID *uint64) (*Agent, error
 		return nil, fmt.Errorf("create chat model: %w", err)
 	}
 
-	gatewayAgent, err := New(ctx, chatModel, f.maxIterations)
+	gatewayAgent, err := New(ctx, chatModel, f.tools, f.maxIterations)
 	if err != nil {
 		return nil, fmt.Errorf("create agent: %w", err)
 	}

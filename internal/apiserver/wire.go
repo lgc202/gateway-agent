@@ -15,7 +15,9 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/server"
 	agentservice "github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
 	chatservice "github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
+	gatewayservice "github.com/lgc202/gateway-agent/internal/apiserver/service/gateway"
 	modelconfigservice "github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
+	higressstore "github.com/lgc202/gateway-agent/internal/apiserver/store/higress"
 	mysqlstore "github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
 )
 
@@ -25,6 +27,8 @@ func InitializeServer(configFile string) (*server.Server, error) {
 		config.Load,
 		mysqlstore.NewDB,
 		mysqlstore.NewStore,
+		higressstore.NewClient,
+		wire.Bind(new(gatewayservice.RouteReader), new(*higressstore.Client)),
 		modelconfigservice.New,
 		agentservice.NewFactory,
 		chatservice.New,

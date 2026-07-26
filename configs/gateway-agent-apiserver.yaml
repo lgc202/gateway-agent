@@ -10,6 +10,12 @@ mysql:
   username: "gateway_agent"
   password: "gateway_agent"
 
+higress:
+  endpoint: "http://127.0.0.1:8081"
+  username: "admin"
+  # 生产环境通过 HIGRESS_PASSWORD 注入
+  password: ""
+
 model:
   provider: "openai"
   # 留空时使用对应 Provider 的默认地址，也可接入兼容服务或代理

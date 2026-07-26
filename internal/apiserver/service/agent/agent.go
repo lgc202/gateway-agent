@@ -9,6 +9,8 @@ import (
 
 	"github.com/cloudwego/eino/adk"
 	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
 	"github.com/cloudwego/eino/schema"
 )
 
@@ -28,12 +30,20 @@ type Agent struct {
 }
 
 // New 创建可流式输出的 Gateway Agent。
-func New(ctx context.Context, chatModel model.ToolCallingChatModel, maxIterations int) (*Agent, error) {
+func New(
+	ctx context.Context,
+	chatModel model.ToolCallingChatModel,
+	tools []tool.BaseTool,
+	maxIterations int,
+) (*Agent, error) {
 	chatModelAgent, err := adk.NewChatModelAgent(ctx, &adk.ChatModelAgentConfig{
-		Name:          agentName,
-		Description:   agentDescription,
-		Instruction:   agentInstruction,
-		Model:         chatModel,
+		Name:        agentName,
+		Description: agentDescription,
+		Instruction: agentInstruction,
+		Model:       chatModel,
+		ToolsConfig: adk.ToolsConfig{
+			ToolsNodeConfig: compose.ToolsNodeConfig{Tools: tools},
+		},
 		MaxIterations: maxIterations,
 	})
 	if err != nil {

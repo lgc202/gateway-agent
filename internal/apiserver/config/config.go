@@ -14,11 +14,12 @@ const modelConfigEncryptionKeyEnv = "MODEL_CONFIG_ENCRYPTION_KEY"
 
 // Config 是 apiserver 当前运行所需的最小配置
 type Config struct {
-	HTTP                     HTTPConfig  `mapstructure:"http"`
-	MySQL                    MySQLConfig `mapstructure:"mysql"`
-	Model                    ModelConfig `mapstructure:"model"`
-	Agent                    AgentConfig `mapstructure:"agent"`
-	ModelConfigEncryptionKey []byte      `mapstructure:"-"`
+	HTTP                     HTTPConfig    `mapstructure:"http"`
+	MySQL                    MySQLConfig   `mapstructure:"mysql"`
+	Higress                  HigressConfig `mapstructure:"higress"`
+	Model                    ModelConfig   `mapstructure:"model"`
+	Agent                    AgentConfig   `mapstructure:"agent"`
+	ModelConfigEncryptionKey []byte        `mapstructure:"-"`
 }
 
 // HTTPConfig 定义 HTTP Server 配置
@@ -32,6 +33,13 @@ type MySQLConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	Database string `mapstructure:"database"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+}
+
+// HigressConfig 定义 Higress Console 连接配置
+type HigressConfig struct {
+	Endpoint string `mapstructure:"endpoint"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 }
@@ -79,6 +87,15 @@ func Load(configFile string) (*Config, error) {
 	}
 	if err := v.BindEnv("mysql.password", "MYSQL_PASSWORD"); err != nil {
 		return nil, fmt.Errorf("bind MYSQL_PASSWORD: %w", err)
+	}
+	if err := v.BindEnv("higress.endpoint", "HIGRESS_ENDPOINT"); err != nil {
+		return nil, fmt.Errorf("bind HIGRESS_ENDPOINT: %w", err)
+	}
+	if err := v.BindEnv("higress.username", "HIGRESS_USERNAME"); err != nil {
+		return nil, fmt.Errorf("bind HIGRESS_USERNAME: %w", err)
+	}
+	if err := v.BindEnv("higress.password", "HIGRESS_PASSWORD"); err != nil {
+		return nil, fmt.Errorf("bind HIGRESS_PASSWORD: %w", err)
 	}
 	if err := v.BindEnv("model.provider", "MODEL_PROVIDER"); err != nil {
 		return nil, fmt.Errorf("bind MODEL_PROVIDER: %w", err)

@@ -15,6 +15,7 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
+	"github.com/lgc202/gateway-agent/internal/apiserver/store/higress"
 	"github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
 )
 
@@ -35,7 +36,14 @@ func InitializeServer(configFile string) (*server.Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	factory := agent.NewFactory(configConfig, service)
+	client, err := higress.NewClient(configConfig)
+	if err != nil {
+		return nil, err
+	}
+	factory, err := agent.NewFactory(configConfig, service, client)
+	if err != nil {
+		return nil, err
+	}
 	chatService := chat.New(store, factory)
 	handler := chat2.New(chatService)
 	modelconfigHandler := modelconfig2.New(service)
