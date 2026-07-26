@@ -5,8 +5,31 @@
 package sqlc
 
 import (
+	"encoding/json"
 	"time"
 )
+
+// 等待用户决定的 Agent 写操作
+type Approval struct {
+	// 审批唯一标识
+	ID uint64 `json:"id"`
+	// 发起本次审批的对话
+	ChatID uint64 `json:"chat_id"`
+	// 审批状态：pending、approved 或 rejected
+	Status string `json:"status"`
+	// 等待执行的 Tool 操作名称，例如 create_route
+	Operation string `json:"operation"`
+	// 模型提交并展示给用户的完整 Tool 参数
+	Arguments json.RawMessage `json:"arguments"`
+	// 需要恢复的写操作调用标识
+	ResumeTarget string `json:"resume_target"`
+	// 恢复被暂停的 Agent 执行所需的运行状态
+	RuntimeState []byte `json:"runtime_state"`
+	// 审批创建时间
+	CreatedAt time.Time `json:"created_at"`
+	// 审批决定时间，未决定时等于创建时间
+	UpdatedAt time.Time `json:"updated_at"`
+}
 
 // 用户与 Gateway Agent 的持续对话
 type Chat struct {

@@ -14,6 +14,8 @@ const (
 	CodeModelConfigNotFound     Code = "MODEL_CONFIG_NOT_FOUND"
 	CodeModelConfigNameConflict Code = "MODEL_CONFIG_NAME_CONFLICT"
 	CodeModelConfigInUse        Code = "MODEL_CONFIG_IN_USE"
+	CodeApprovalNotFound        Code = "APPROVAL_NOT_FOUND"
+	CodeApprovalAlreadyDecided  Code = "APPROVAL_ALREADY_DECIDED"
 	CodeDependencyUnavailable   Code = "DEPENDENCY_UNAVAILABLE"
 	CodeInternal                Code = "INTERNAL_ERROR"
 )
