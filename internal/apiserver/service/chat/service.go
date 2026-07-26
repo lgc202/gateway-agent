@@ -3,14 +3,12 @@ package chat
 
 import (
 	"context"
-	"strings"
 	"time"
 
+	agentservice "github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
 	mysqlstore "github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
 	"github.com/lgc202/gateway-agent/internal/pkg/errorsx"
 )
-
-const maxMessageContentBytes = 60 * 1024
 
 // MessageRole 表示消息在对话中的角色
 type MessageRole string
@@ -39,12 +37,13 @@ type Message struct {
 
 // Service 承载 Chat 和 Message 用例
 type Service struct {
-	store *mysqlstore.Store
+	store        *mysqlstore.Store
+	agentFactory *agentservice.Factory
 }
 
 // New 创建 Chat Service
-func New(store *mysqlstore.Store) *Service {
-	return &Service{store: store}
+func New(store *mysqlstore.Store, agentFactory *agentservice.Factory) *Service {
+	return &Service{store: store, agentFactory: agentFactory}
 }
 
 // Valid 判断消息角色是否属于当前协议定义
@@ -68,23 +67,6 @@ func (s *Service) GetChat(ctx context.Context, chatID uint64) (Chat, error) {
 		return Chat{}, err
 	}
 	return toChat(record), nil
-}
-
-// AppendUserMessage 向对话追加一条原始用户消息
-func (s *Service) AppendUserMessage(ctx context.Context, chatID uint64, content string) (Message, error) {
-	if strings.TrimSpace(content) == "" || len(content) > maxMessageContentBytes {
-		return Message{}, errorsx.NewUser(
-			errorsx.CodeInvalidMessageContent,
-			"消息内容不能为空且不能超过 60 KiB",
-		)
-	}
-
-	record, err := s.store.AppendMessage(ctx, chatID, string(MessageRoleUser), content)
-	if err != nil {
-		return Message{}, err
-	}
-
-	return toMessage(record), nil
 }
 
 // ListMessages 按游标正序查询对话消息

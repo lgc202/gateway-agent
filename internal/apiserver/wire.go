@@ -13,6 +13,7 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/health"
 	modelconfighandler "github.com/lgc202/gateway-agent/internal/apiserver/handler/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/server"
+	agentservice "github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
 	chatservice "github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
 	modelconfigservice "github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
 	mysqlstore "github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
@@ -24,8 +25,9 @@ func InitializeServer(configFile string) (*server.Server, error) {
 		config.Load,
 		mysqlstore.NewDB,
 		mysqlstore.NewStore,
-		chatservice.New,
 		modelconfigservice.New,
+		agentservice.NewFactory,
+		chatservice.New,
 		chathandler.New,
 		modelconfighandler.New,
 		health.New,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/lgc202/gateway-agent/internal/apiserver/store/mysql/sqlc"
@@ -139,6 +140,27 @@ func (s *Store) ListMessages(ctx context.Context, chatID, afterID uint64, limit 
 
 	messages := make([]Message, 0, len(records))
 	for _, record := range records {
+		messages = append(messages, toMessage(record))
+	}
+
+	return messages, nil
+}
+
+// ListRecentMessages 查询最近的消息，并按对话发生顺序返回
+func (s *Store) ListRecentMessages(ctx context.Context, chatID uint64, limit int32) ([]Message, error) {
+	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
+	defer cancel()
+
+	records, err := s.queries.ListRecentChatMessages(ctx, sqlc.ListRecentChatMessagesParams{
+		ChatID: chatID,
+		Limit:  limit,
+	})
+	if err != nil {
+		return nil, databaseError(err)
+	}
+
+	messages := make([]Message, 0, len(records))
+	for _, record := range slices.Backward(records) {
 		messages = append(messages, toMessage(record))
 	}
 

@@ -14,3 +14,10 @@ WHERE chat_id = ?
   AND id > ?
 ORDER BY id
 LIMIT ?;
+
+-- name: ListRecentChatMessages :many
+SELECT id, chat_id, role, content, created_at
+FROM chat_messages
+WHERE chat_id = ?
+ORDER BY id DESC
+LIMIT ?;

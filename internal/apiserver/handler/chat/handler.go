@@ -133,13 +133,19 @@ func (h *Handler) appendMessage(ctx *gin.Context) {
 		return
 	}
 
-	message, err := h.service.AppendUserMessage(ctx.Request.Context(), chatID, req.Content)
+	// Server 的普通响应写超时是 30 秒，SSE 请求需要在模型调用期间保持可写。
+	if err := http.NewResponseController(ctx.Writer).SetWriteDeadline(time.Time{}); err != nil {
+		response.WriteError(ctx, fmt.Errorf("disable SSE write deadline: %w", err))
+		return
+	}
+
+	events, err := h.service.StreamReply(ctx.Request.Context(), chatID, req.Content)
 	if err != nil {
 		response.WriteError(ctx, err)
 		return
 	}
 
-	response.WriteSuccess(ctx, http.StatusCreated, toMessageResponse(message))
+	streamReply(ctx, events)
 }
 
 func (h *Handler) listMessages(ctx *gin.Context) {

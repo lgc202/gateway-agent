@@ -39,9 +39,18 @@ func WriteFailure(ctx *gin.Context, status int, code errorsx.Code, message strin
 
 // WriteError 根据错误类型写入安全的错误响应
 func WriteError(ctx *gin.Context, err error) {
+	status, resp := NewErrorResp(ctx, err)
+	ctx.JSON(status, resp)
+}
+
+// NewErrorResp 构造可用于 JSON 或 SSE 的安全错误响应
+func NewErrorResp(ctx *gin.Context, err error) (int, Envelope) {
 	if userErr, ok := errors.AsType[*errorsx.UserError](err); ok {
-		WriteFailure(ctx, userErrorStatus(userErr.Code), userErr.Code, userErr.Message)
-		return
+		return userErrorStatus(userErr.Code), Envelope{
+			Code:    string(userErr.Code),
+			Message: userErr.Message,
+			Data:    nil,
+		}
 	}
 
 	status := http.StatusInternalServerError
@@ -59,7 +68,12 @@ func WriteError(ctx *gin.Context, err error) {
 		"path", ctx.Request.URL.Path,
 		"error", err,
 	)
-	WriteFailure(ctx, status, errorsx.CodeInternal, message)
+
+	return status, Envelope{
+		Code:    string(errorsx.CodeInternal),
+		Message: message,
+		Data:    nil,
+	}
 }
 
 func userErrorStatus(code errorsx.Code) int {

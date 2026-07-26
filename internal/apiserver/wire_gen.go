@@ -12,6 +12,7 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/health"
 	modelconfig2 "github.com/lgc202/gateway-agent/internal/apiserver/handler/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/server"
+	"github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
@@ -30,13 +31,14 @@ func InitializeServer(configFile string) (*server.Server, error) {
 		return nil, err
 	}
 	store := mysql.NewStore(db)
-	service := chat.New(store)
-	handler := chat2.New(service)
-	modelconfigService, err := modelconfig.New(configConfig, store)
+	service, err := modelconfig.New(configConfig, store)
 	if err != nil {
 		return nil, err
 	}
-	modelconfigHandler := modelconfig2.New(modelconfigService)
+	factory := agent.NewFactory(configConfig, service)
+	chatService := chat.New(store, factory)
+	handler := chat2.New(chatService)
+	modelconfigHandler := modelconfig2.New(service)
 	healthHandler := health.New(db)
 	serverServer := server.New(configConfig, db, handler, modelconfigHandler, healthHandler)
 	return serverServer, nil

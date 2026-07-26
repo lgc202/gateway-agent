@@ -87,3 +87,45 @@ func (q *Queries) ListChatMessagesAfter(ctx context.Context, arg ListChatMessage
 	}
 	return items, nil
 }
+
+const listRecentChatMessages = `-- name: ListRecentChatMessages :many
+SELECT id, chat_id, role, content, created_at
+FROM chat_messages
+WHERE chat_id = ?
+ORDER BY id DESC
+LIMIT ?
+`
+
+type ListRecentChatMessagesParams struct {
+	ChatID uint64 `json:"chat_id"`
+	Limit  int32  `json:"limit"`
+}
+
+func (q *Queries) ListRecentChatMessages(ctx context.Context, arg ListRecentChatMessagesParams) ([]ChatMessage, error) {
+	rows, err := q.db.QueryContext(ctx, listRecentChatMessages, arg.ChatID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ChatMessage{}
+	for rows.Next() {
+		var i ChatMessage
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatID,
+			&i.Role,
+			&i.Content,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
