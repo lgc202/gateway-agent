@@ -11,7 +11,7 @@ import (
 )
 
 const getChat = `-- name: GetChat :one
-SELECT id, created_at, updated_at
+SELECT id, model_config_id, created_at, updated_at
 FROM chats
 WHERE id = ?
 `
@@ -19,7 +19,12 @@ WHERE id = ?
 func (q *Queries) GetChat(ctx context.Context, id uint64) (Chat, error) {
 	row := q.db.QueryRowContext(ctx, getChat, id)
 	var i Chat
-	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.ModelConfigID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 

@@ -11,3 +11,12 @@ sql:
         sql_package: database/sql
         emit_json_tags: true
         emit_empty_slices: true
+        overrides:
+          - column: model_configs.api_key
+            go_type:
+              type: byte
+              slice: true
+        rename:
+          base_url: BaseURL
+          api_key: APIKey
+          api_key_configured: APIKeyConfigured

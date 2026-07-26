@@ -2,7 +2,7 @@
 INSERT INTO chats () VALUES ();
 
 -- name: GetChat :one
-SELECT id, created_at, updated_at
+SELECT id, model_config_id, created_at, updated_at
 FROM chats
 WHERE id = ?;
 

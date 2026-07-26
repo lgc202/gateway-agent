@@ -5,6 +5,7 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -12,6 +13,8 @@ import (
 type Chat struct {
 	// 对话唯一标识
 	ID uint64 `json:"id"`
+	// 当前对话选择的模型配置，NULL 表示使用系统默认配置
+	ModelConfigID sql.NullInt64 `json:"model_config_id"`
 	// 对话创建时间
 	CreatedAt time.Time `json:"created_at"`
 	// 对话最后活跃时间
@@ -30,4 +33,26 @@ type ChatMessage struct {
 	Content string `json:"content"`
 	// 消息创建时间
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// Gateway Agent 可用的模型配置
+type ModelConfig struct {
+	// 模型配置唯一标识
+	ID uint64 `json:"id"`
+	// 模型配置显示名称
+	Name string `json:"name"`
+	// 模型服务提供方
+	Provider string `json:"provider"`
+	// 模型服务中的模型名称
+	Model string `json:"model"`
+	// 模型服务地址，空字符串表示使用默认地址
+	BaseURL string `json:"base_url"`
+	// AES-256-GCM 加密后的模型 API Key
+	APIKey []byte `json:"api_key"`
+	// 模型单次回复的最大 Token 数
+	MaxTokens uint32 `json:"max_tokens"`
+	// 模型配置创建时间
+	CreatedAt time.Time `json:"created_at"`
+	// 模型配置更新时间
+	UpdatedAt time.Time `json:"updated_at"`
 }
