@@ -78,9 +78,11 @@ func NewErrorResp(ctx *gin.Context, err error) (int, Envelope) {
 
 func userErrorStatus(code errorsx.Code) int {
 	switch code {
-	case errorsx.CodeChatNotFound, errorsx.CodeModelConfigNotFound:
+	case errorsx.CodeChatNotFound, errorsx.CodeModelConfigNotFound, errorsx.CodeApprovalNotFound:
 		return http.StatusNotFound
-	case errorsx.CodeModelConfigNameConflict, errorsx.CodeModelConfigInUse:
+	case errorsx.CodeModelConfigNameConflict,
+		errorsx.CodeModelConfigInUse,
+		errorsx.CodeApprovalAlreadyDecided:
 		return http.StatusConflict
 	case errorsx.CodeInvalidRequest, errorsx.CodeInvalidMessageContent:
 		return http.StatusBadRequest

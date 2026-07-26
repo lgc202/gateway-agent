@@ -68,6 +68,31 @@ func (s *Store) GetApproval(ctx context.Context, chatID, approvalID uint64) (App
 	return toApproval(record), nil
 }
 
+// ListPendingApprovals 查询指定 Chat 中尚未决定的审批记录。
+func (s *Store) ListPendingApprovals(ctx context.Context, chatID uint64) ([]Approval, error) {
+	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
+	defer cancel()
+
+	records, err := s.queries.ListPendingApprovals(ctx, chatID)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+
+	approvals := make([]Approval, 0, len(records))
+	for _, record := range records {
+		approvals = append(approvals, Approval{
+			ID:        record.ID,
+			ChatID:    record.ChatID,
+			Status:    record.Status,
+			Operation: record.Operation,
+			Arguments: record.Arguments,
+			CreatedAt: record.CreatedAt,
+			UpdatedAt: record.UpdatedAt,
+		})
+	}
+	return approvals, nil
+}
+
 // DecideApproval 将待审批记录原子更新为批准或拒绝
 func (s *Store) DecideApproval(ctx context.Context, chatID, approvalID uint64, status string) (Approval, error) {
 	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)

@@ -60,17 +60,17 @@ func (s *Service) StreamReply(
 		})
 	}
 
-	return s.streamReply(ctx, chatID, gatewayAgent, messages), nil
+	return s.streamAgentEvents(ctx, chatID, gatewayAgent.Stream(ctx, messages)), nil
 }
 
-func (s *Service) streamReply(
+// streamAgentEvents 将 Agent 事件转换为 Chat SSE 事件，并保存完整回复或新的审批。
+func (s *Service) streamAgentEvents(
 	ctx context.Context,
 	chatID uint64,
-	gatewayAgent *agentservice.Agent,
-	messages []agentservice.Message,
+	events iter.Seq2[agentservice.Event, error],
 ) iter.Seq2[ReplyEvent, error] {
 	return func(yield func(ReplyEvent, error) bool) {
-		for event, err := range gatewayAgent.Stream(ctx, messages) {
+		for event, err := range events {
 			if err != nil {
 				yield(ReplyEvent{}, err)
 				return

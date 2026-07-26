@@ -8,5 +8,6 @@ CREATE TABLE approvals (
     runtime_state MEDIUMBLOB NOT NULL COMMENT '恢复被暂停的 Agent 执行所需的运行状态',
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '审批创建时间',
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '审批决定时间，未决定时等于创建时间',
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    KEY idx_approvals_chat_status (chat_id, status, id)
 ) ENGINE=InnoDB COMMENT='等待用户决定的 Agent 写操作';

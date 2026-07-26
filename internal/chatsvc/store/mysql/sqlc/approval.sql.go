@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"time"
 )
 
 const decideApproval = `-- name: DecideApproval :execrows
@@ -94,4 +95,59 @@ func (q *Queries) InsertApproval(ctx context.Context, arg InsertApprovalParams) 
 		arg.ResumeTarget,
 		arg.RuntimeState,
 	)
+}
+
+const listPendingApprovals = `-- name: ListPendingApprovals :many
+SELECT id,
+       chat_id,
+       status,
+       operation,
+       arguments,
+       created_at,
+       updated_at
+FROM approvals
+WHERE chat_id = ?
+  AND status = 'pending'
+ORDER BY id
+`
+
+type ListPendingApprovalsRow struct {
+	ID        uint64          `json:"id"`
+	ChatID    uint64          `json:"chat_id"`
+	Status    string          `json:"status"`
+	Operation string          `json:"operation"`
+	Arguments json.RawMessage `json:"arguments"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+func (q *Queries) ListPendingApprovals(ctx context.Context, chatID uint64) ([]ListPendingApprovalsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPendingApprovals, chatID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPendingApprovalsRow{}
+	for rows.Next() {
+		var i ListPendingApprovalsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChatID,
+			&i.Status,
+			&i.Operation,
+			&i.Arguments,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

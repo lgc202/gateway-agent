@@ -45,6 +45,11 @@ type ApprovalResp struct {
 	CreatedAt time.Time                  `json:"created_at"`
 }
 
+// ApprovalListResp 是待审批记录列表响应
+type ApprovalListResp struct {
+	Items []ApprovalResp `json:"items"`
+}
+
 // NewChatResp 根据用例层对话构造 HTTP 响应
 func NewChatResp(value chatservice.Chat) ChatResp {
 	return ChatResp{
@@ -94,4 +99,13 @@ func NewApprovalResp(value chatservice.Approval) ApprovalResp {
 		Arguments: value.Arguments,
 		CreatedAt: value.CreatedAt,
 	}
+}
+
+// NewApprovalListResp 构造待审批记录列表响应
+func NewApprovalListResp(approvals []chatservice.Approval) ApprovalListResp {
+	resp := ApprovalListResp{Items: make([]ApprovalResp, 0, len(approvals))}
+	for _, approval := range approvals {
+		resp.Items = append(resp.Items, NewApprovalResp(approval))
+	}
+	return resp
 }

@@ -2,9 +2,7 @@
 package chat
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -30,6 +28,8 @@ func (h *Handler) Register(router *gin.RouterGroup) {
 	router.GET("/chats/:chat_id", h.getChat)
 	router.POST("/chats/:chat_id/messages", h.sendMessage)
 	router.GET("/chats/:chat_id/messages", h.listMessages)
+	router.GET("/chats/:chat_id/approvals", h.listApprovals)
+	router.POST("/chats/:chat_id/approvals/:approval_id/decisions", h.decideApproval)
 }
 
 // createChat 创建一段使用指定模型配置的新对话
@@ -90,9 +90,8 @@ func (h *Handler) sendMessage(ctx *gin.Context) {
 		return
 	}
 
-	// Server 的普通响应写超时是 30 秒，SSE 请求需要在模型调用期间保持可写。
-	if err := http.NewResponseController(ctx.Writer).SetWriteDeadline(time.Time{}); err != nil {
-		response.WriteError(ctx, fmt.Errorf("disable SSE write deadline: %w", err))
+	if err := disableStreamWriteDeadline(ctx); err != nil {
+		response.WriteError(ctx, err)
 		return
 	}
 

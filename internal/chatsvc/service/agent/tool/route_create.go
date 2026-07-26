@@ -3,6 +3,7 @@ package tool
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	einotool "github.com/cloudwego/eino/components/tool"
 	toolutils "github.com/cloudwego/eino/components/tool/utils"
@@ -14,6 +15,11 @@ import (
 const (
 	routeCreateToolName        = "create_route"
 	routeCreateToolDescription = "创建一条网关路由。该操作会修改网关，必须先向用户展示完整参数并获得审批。"
+	routePathTypePrefix        = "PRE"
+	routePathTypeExact         = "EQUAL"
+	routePathTypeRegular       = "REGULAR"
+	maxBackendPort             = 65535
+	requiredBackendWeight      = 100
 )
 
 // routeCreateInput 是模型调用创建路由 Tool 时提交的参数
@@ -66,6 +72,9 @@ func NewRouteCreate(writer gatewayservice.RouteWriter) (einotool.BaseTool, error
 		func(ctx context.Context, input routeCreateInput) (string, error) {
 			wasInterrupted, _, storedInput := einotool.GetInterruptState[routeCreateInput](ctx)
 			if !wasInterrupted {
+				if err := input.normalize(); err != nil {
+					return "", err
+				}
 				return "", interruptRouteCreate(ctx, input)
 			}
 
@@ -90,6 +99,63 @@ func NewRouteCreate(writer gatewayservice.RouteWriter) (einotool.BaseTool, error
 			return fmt.Sprintf("route %q created successfully", createdRoute.Name), nil
 		},
 	)
+}
+
+// normalize 规范化并校验准备展示给用户审批的路由参数。
+func (input *routeCreateInput) normalize() error {
+	input.Name = strings.TrimSpace(input.Name)
+	if input.Name == "" {
+		return fmt.Errorf("route name is required")
+	}
+
+	for i := range input.Domains {
+		input.Domains[i] = strings.TrimSpace(input.Domains[i])
+		if input.Domains[i] == "" {
+			return fmt.Errorf("route domain cannot be empty")
+		}
+	}
+
+	input.Path.Type = strings.ToUpper(strings.TrimSpace(input.Path.Type))
+	switch input.Path.Type {
+	case routePathTypePrefix, routePathTypeExact, routePathTypeRegular:
+	default:
+		return fmt.Errorf("unsupported route path type %q", input.Path.Type)
+	}
+	input.Path.Value = strings.TrimSpace(input.Path.Value)
+	if input.Path.Value == "" {
+		return fmt.Errorf("route path value is required")
+	}
+
+	for i := range input.Methods {
+		input.Methods[i] = strings.ToUpper(strings.TrimSpace(input.Methods[i]))
+		if input.Methods[i] == "" {
+			return fmt.Errorf("route method cannot be empty")
+		}
+	}
+
+	if len(input.Backends) == 0 {
+		return fmt.Errorf("at least one route backend is required")
+	}
+	var totalWeight int
+	for i := range input.Backends {
+		backend := &input.Backends[i]
+		backend.Name = strings.TrimSpace(backend.Name)
+		if backend.Name == "" {
+			return fmt.Errorf("route backend name is required")
+		}
+		if backend.Port < 1 || backend.Port > maxBackendPort {
+			return fmt.Errorf("route backend port must be between 1 and %d", maxBackendPort)
+		}
+		if backend.Weight < 1 {
+			return fmt.Errorf("route backend weight must be greater than 0")
+		}
+		totalWeight += backend.Weight
+	}
+	if totalWeight != requiredBackendWeight {
+		return fmt.Errorf("route backend weights must total %d", requiredBackendWeight)
+	}
+
+	return nil
 }
 
 // interruptRouteCreate 保存原始参数，并通知 Eino 暂停本次 Agent 执行

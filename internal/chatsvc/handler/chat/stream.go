@@ -3,8 +3,10 @@ package chat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"iter"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -14,6 +16,14 @@ import (
 )
 
 const streamErrorEvent = "error"
+
+// disableStreamWriteDeadline 关闭普通 HTTP 写超时，使 SSE 可以覆盖完整的模型调用过程
+func disableStreamWriteDeadline(ctx *gin.Context) error {
+	if err := http.NewResponseController(ctx.Writer).SetWriteDeadline(time.Time{}); err != nil {
+		return fmt.Errorf("disable SSE write deadline: %w", err)
+	}
+	return nil
+}
 
 // streamReply 通过同一条 HTTP 响应持续写入 Agent 事件
 func streamReply(ctx *gin.Context, events iter.Seq2[chatservice.ReplyEvent, error]) {
