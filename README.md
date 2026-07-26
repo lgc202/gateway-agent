@@ -2,7 +2,7 @@
 
 Gateway Agent 是一个面向企业 AI 网关运维场景的对话式 Agent。它把自然语言需求转换为可审查、可审批、可执行和可回滚的网关操作。一套 Gateway Agent 绑定一套逻辑 Gateway 控制面。
 
-当前仓库已经提供一个可运行的 `gateway-agent-apiserver`，完成后续 Agent 能力依赖的最小对话入口：
+当前仓库已经提供一个可运行的 `chat-svc`，完成后续 Agent 能力依赖的最小对话入口：
 
 - 创建和查询 Chat；
 - 追加用户 Message；
@@ -35,7 +35,7 @@ export PRODUCT_MIGRATION_URL='mysql://gateway_agent:gateway_agent@tcp(127.0.0.1:
 make migrate-up
 
 make build
-./_output/bin/gateway-agent-apiserver --config configs/gateway-agent-apiserver.yaml
+./_output/bin/chat-svc --config configs/chat-svc.yaml
 ```
 
 在另一个终端执行真实 Chat API 演示：

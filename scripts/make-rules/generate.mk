@@ -25,4 +25,4 @@ $(MIGRATE):
 .PHONY: generate
 generate: tools ## 生成 sqlc 和 Wire 代码
 	@$(SQLC) generate -f db/sqlc.yaml
-	@$(WIRE) ./internal/apiserver
+	@$(WIRE) ./internal/chatsvc

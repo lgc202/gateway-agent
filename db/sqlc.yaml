@@ -1,13 +1,13 @@
 version: "2"
 sql:
-  - name: apiserver
+  - name: chatsvc
     engine: mysql
     schema: migrations
-    queries: apiserver/queries
+    queries: chatsvc/queries
     gen:
       go:
         package: sqlc
-        out: ../internal/apiserver/store/mysql/sqlc
+        out: ../internal/chatsvc/store/mysql/sqlc
         sql_package: database/sql
         emit_json_tags: true
         emit_empty_slices: true
