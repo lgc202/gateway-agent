@@ -2,18 +2,23 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/viper"
 )
 
+const modelConfigEncryptionKeyEnv = "MODEL_CONFIG_ENCRYPTION_KEY"
+
 // Config 是 apiserver 当前运行所需的最小配置
 type Config struct {
-	HTTP  HTTPConfig  `mapstructure:"http"`
-	MySQL MySQLConfig `mapstructure:"mysql"`
-	Model ModelConfig `mapstructure:"model"`
-	Agent AgentConfig `mapstructure:"agent"`
+	HTTP                     HTTPConfig  `mapstructure:"http"`
+	MySQL                    MySQLConfig `mapstructure:"mysql"`
+	Model                    ModelConfig `mapstructure:"model"`
+	Agent                    AgentConfig `mapstructure:"agent"`
+	ModelConfigEncryptionKey []byte      `mapstructure:"-"`
 }
 
 // HTTPConfig 定义 HTTP Server 配置
@@ -36,7 +41,7 @@ type ModelConfig struct {
 	Provider  string `mapstructure:"provider"`
 	BaseURL   string `mapstructure:"base_url"`
 	APIKey    string `mapstructure:"api_key"`
-	Name      string `mapstructure:"name"`
+	Model     string `mapstructure:"model"`
 	MaxTokens int    `mapstructure:"max_tokens"`
 }
 
@@ -84,7 +89,7 @@ func Load(configFile string) (*Config, error) {
 	if err := v.BindEnv("model.api_key", "MODEL_API_KEY"); err != nil {
 		return nil, fmt.Errorf("bind MODEL_API_KEY: %w", err)
 	}
-	if err := v.BindEnv("model.name", "MODEL_NAME"); err != nil {
+	if err := v.BindEnv("model.model", "MODEL_NAME"); err != nil {
 		return nil, fmt.Errorf("bind MODEL_NAME: %w", err)
 	}
 	if err := v.BindEnv("model.max_tokens", "MODEL_MAX_TOKENS"); err != nil {
@@ -102,6 +107,12 @@ func Load(configFile string) (*Config, error) {
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("decode config file %q: %w", configFile, err)
 	}
+	encryptionKey, err := loadModelConfigEncryptionKey()
+	if err != nil {
+		return nil, err
+	}
+	cfg.ModelConfigEncryptionKey = encryptionKey
+
 	if strings.TrimSpace(cfg.HTTP.Host) == "" {
 		return nil, fmt.Errorf("http.host is required")
 	}
@@ -125,4 +136,19 @@ func Load(configFile string) (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// loadModelConfigEncryptionKey 从独立环境变量读取模型凭证加密主密钥
+func loadModelConfigEncryptionKey() ([]byte, error) {
+	encodedKey, exists := os.LookupEnv(modelConfigEncryptionKeyEnv)
+	if !exists || strings.TrimSpace(encodedKey) == "" {
+		return nil, fmt.Errorf("%s is required", modelConfigEncryptionKeyEnv)
+	}
+
+	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encodedKey))
+	if err != nil {
+		return nil, fmt.Errorf("decode %s: %w", modelConfigEncryptionKeyEnv, err)
+	}
+
+	return key, nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/config"
 	chathandler "github.com/lgc202/gateway-agent/internal/apiserver/handler/chat"
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/health"
+	modelconfighandler "github.com/lgc202/gateway-agent/internal/apiserver/handler/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/response"
 	"github.com/lgc202/gateway-agent/internal/apiserver/middleware"
 	"github.com/lgc202/gateway-agent/internal/pkg/errorsx"
@@ -39,6 +40,7 @@ func New(
 	cfg *config.Config,
 	db *sql.DB,
 	chatHandler *chathandler.Handler,
+	modelConfigHandler *modelconfighandler.Handler,
 	healthHandler *health.Handler,
 ) *Server {
 	if _, exists := os.LookupEnv(gin.EnvGinMode); !exists {
@@ -58,7 +60,9 @@ func New(
 	})
 
 	healthHandler.Register(router)
-	chatHandler.Register(router.Group("/api/v1"))
+	api := router.Group("/api/v1")
+	chatHandler.Register(api)
+	modelConfigHandler.Register(api)
 
 	return &Server{
 		httpServer: &http.Server{

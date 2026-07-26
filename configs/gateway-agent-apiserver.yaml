@@ -15,7 +15,7 @@ model:
   # 留空时使用对应 Provider 的默认地址，也可接入兼容服务或代理
   base_url: ""
   api_key: ""
-  name: ""
+  model: ""
   max_tokens: 4096
 
 agent:

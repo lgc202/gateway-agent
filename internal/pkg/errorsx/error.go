@@ -7,12 +7,15 @@ import "fmt"
 type Code string
 
 const (
-	CodeOK                    Code = "OK"
-	CodeInvalidRequest        Code = "INVALID_REQUEST"
-	CodeChatNotFound          Code = "CHAT_NOT_FOUND"
-	CodeInvalidMessageContent Code = "INVALID_MESSAGE_CONTENT"
-	CodeDependencyUnavailable Code = "DEPENDENCY_UNAVAILABLE"
-	CodeInternal              Code = "INTERNAL_ERROR"
+	CodeOK                      Code = "OK"
+	CodeInvalidRequest          Code = "INVALID_REQUEST"
+	CodeChatNotFound            Code = "CHAT_NOT_FOUND"
+	CodeInvalidMessageContent   Code = "INVALID_MESSAGE_CONTENT"
+	CodeModelConfigNotFound     Code = "MODEL_CONFIG_NOT_FOUND"
+	CodeModelConfigNameConflict Code = "MODEL_CONFIG_NAME_CONFLICT"
+	CodeModelConfigInUse        Code = "MODEL_CONFIG_IN_USE"
+	CodeDependencyUnavailable   Code = "DEPENDENCY_UNAVAILABLE"
+	CodeInternal                Code = "INTERNAL_ERROR"
 )
 
 // UserError 表示错误码和消息可以直接返回给 API 调用方

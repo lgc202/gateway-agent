@@ -64,8 +64,10 @@ func WriteError(ctx *gin.Context, err error) {
 
 func userErrorStatus(code errorsx.Code) int {
 	switch code {
-	case errorsx.CodeChatNotFound:
+	case errorsx.CodeChatNotFound, errorsx.CodeModelConfigNotFound:
 		return http.StatusNotFound
+	case errorsx.CodeModelConfigNameConflict, errorsx.CodeModelConfigInUse:
+		return http.StatusConflict
 	case errorsx.CodeInvalidRequest, errorsx.CodeInvalidMessageContent:
 		return http.StatusBadRequest
 	default:

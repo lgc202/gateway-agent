@@ -10,8 +10,10 @@ import (
 	"github.com/lgc202/gateway-agent/internal/apiserver/config"
 	chat2 "github.com/lgc202/gateway-agent/internal/apiserver/handler/chat"
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/health"
+	modelconfig2 "github.com/lgc202/gateway-agent/internal/apiserver/handler/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/server"
 	"github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
+	"github.com/lgc202/gateway-agent/internal/apiserver/service/modelconfig"
 	"github.com/lgc202/gateway-agent/internal/apiserver/store/mysql"
 )
 
@@ -30,7 +32,12 @@ func InitializeServer(configFile string) (*server.Server, error) {
 	store := mysql.NewStore(db)
 	service := chat.New(store)
 	handler := chat2.New(service)
+	modelconfigService, err := modelconfig.New(configConfig, store)
+	if err != nil {
+		return nil, err
+	}
+	modelconfigHandler := modelconfig2.New(modelconfigService)
 	healthHandler := health.New(db)
-	serverServer := server.New(configConfig, db, handler, healthHandler)
+	serverServer := server.New(configConfig, db, handler, modelconfigHandler, healthHandler)
 	return serverServer, nil
 }

@@ -22,7 +22,7 @@ const (
 	databaseOperationTimeout = 10 * time.Second
 )
 
-// Store 提供 Chat 领域当前所需的数据库操作
+// Store 提供 apiserver 当前所需的数据库操作
 type Store struct {
 	db      *sql.DB
 	queries *sqlc.Queries
