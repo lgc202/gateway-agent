@@ -40,7 +40,7 @@ func InitializeServer(configFile string) (*server.Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	factory, err := agent.NewFactory(configConfig, service, client)
+	factory, err := agent.NewFactory(configConfig, service, client, client)
 	if err != nil {
 		return nil, err
 	}

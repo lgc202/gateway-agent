@@ -29,6 +29,7 @@ func InitializeServer(configFile string) (*server.Server, error) {
 		mysqlstore.NewStore,
 		higressstore.NewClient,
 		wire.Bind(new(gatewayservice.RouteReader), new(*higressstore.Client)),
+		wire.Bind(new(gatewayservice.RouteWriter), new(*higressstore.Client)),
 		modelconfigservice.New,
 		agentservice.NewFactory,
 		chatservice.New,

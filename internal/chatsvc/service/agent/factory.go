@@ -25,17 +25,22 @@ func NewFactory(
 	cfg *config.Config,
 	modelConfigs *modelconfigservice.Service,
 	routeReader gatewayservice.RouteReader,
+	routeWriter gatewayservice.RouteWriter,
 ) (*Factory, error) {
 	routeQueryTool, err := agenttool.NewRouteQuery(routeReader)
 	if err != nil {
 		return nil, fmt.Errorf("create route query tool: %w", err)
+	}
+	routeCreateTool, err := agenttool.NewRouteCreate(routeWriter)
+	if err != nil {
+		return nil, fmt.Errorf("create route creation tool: %w", err)
 	}
 
 	return &Factory{
 		defaultModel:  cfg.Model,
 		maxIterations: cfg.Agent.MaxIterations,
 		modelConfigs:  modelConfigs,
-		tools:         []tool.BaseTool{routeQueryTool},
+		tools:         []tool.BaseTool{routeQueryTool, routeCreateTool},
 	}, nil
 }
 

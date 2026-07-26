@@ -27,9 +27,14 @@ func (s *checkpointStore) Get(_ context.Context, id string) ([]byte, bool, error
 
 // Set 保存指定运行状态。
 func (s *checkpointStore) Set(_ context.Context, id string, state []byte) error {
+	s.restore(id, state)
+	return nil
+}
+
+// restore 将持久化的运行状态装载到当前 Agent 的内存 Store。
+func (s *checkpointStore) restore(id string, state []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.data[id] = state
-	return nil
 }

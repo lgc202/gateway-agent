@@ -80,51 +80,60 @@ func (a *Agent) Stream(ctx context.Context, messages []Message) iter.Seq2[Event,
 		defer cancel()
 
 		iterator := a.runner.Run(runCtx, einoMessages, adk.WithCheckPointID(a.checkpointID))
-		var finalContent string
-		var completed bool
+		a.streamEvents(runCtx, iterator, yield)
+	}
+}
 
-		// Runner 按 ReAct 执行顺序输出模型消息和 Tool 结果。
-		for {
-			event, ok := iterator.Next()
-			if !ok {
-				break
-			}
-			if event.Err != nil {
-				yield(Event{}, event.Err)
-				return
-			}
-			if event.Action != nil && event.Action.Interrupted != nil {
-				approvalEvent, err := a.approvalEvent(runCtx, event.Action.Interrupted)
-				if err != nil {
-					yield(Event{}, err)
-					return
-				}
-				yield(approvalEvent, nil)
-				return
-			}
-			if event.Output == nil || event.Output.MessageOutput == nil {
-				continue
-			}
+// streamEvents 消费 Eino Runner 事件，并输出 Agent 的稳定事件。
+func (a *Agent) streamEvents(
+	ctx context.Context,
+	iterator *adk.AsyncIterator[*adk.AgentEvent],
+	yield func(Event, error) bool,
+) {
+	var finalContent string
+	var completed bool
 
-			message, keepGoing, err := streamAssistantMessage(event.Output.MessageOutput, yield)
+	// Runner 按 ReAct 执行顺序输出模型消息和 Tool 结果。
+	for {
+		event, ok := iterator.Next()
+		if !ok {
+			break
+		}
+		if event.Err != nil {
+			yield(Event{}, event.Err)
+			return
+		}
+		if event.Action != nil && event.Action.Interrupted != nil {
+			approvalEvent, err := a.approvalEvent(ctx, event.Action.Interrupted)
 			if err != nil {
 				yield(Event{}, err)
 				return
 			}
-			if !keepGoing {
-				return
-			}
-			if message == nil || len(message.ToolCalls) > 0 {
-				continue
-			}
-
-			finalContent = message.Content
-			completed = true
+			yield(approvalEvent, nil)
+			return
+		}
+		if event.Output == nil || event.Output.MessageOutput == nil {
+			continue
 		}
 
-		if completed {
-			yield(Event{Type: EventTypeCompleted, Content: finalContent}, nil)
+		message, keepGoing, err := streamAssistantMessage(event.Output.MessageOutput, yield)
+		if err != nil {
+			yield(Event{}, err)
+			return
 		}
+		if !keepGoing {
+			return
+		}
+		if message == nil || len(message.ToolCalls) > 0 {
+			continue
+		}
+
+		finalContent = message.Content
+		completed = true
+	}
+
+	if completed {
+		yield(Event{Type: EventTypeCompleted, Content: finalContent}, nil)
 	}
 }
 
