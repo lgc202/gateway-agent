@@ -87,6 +87,36 @@ func (s *Service) Get(ctx context.Context, id uint64) (ModelConfig, error) {
 	return toModelConfig(record), nil
 }
 
+// GetRuntimeConfig 读取并解密 Agent 创建模型客户端所需的完整配置
+func (s *Service) GetRuntimeConfig(ctx context.Context, id uint64) (config.ModelConfig, error) {
+	record, err := s.Get(ctx, id)
+	if err != nil {
+		return config.ModelConfig{}, err
+	}
+
+	runtimeConfig := config.ModelConfig{
+		Provider:  record.Provider,
+		BaseURL:   record.BaseURL,
+		Model:     record.Model,
+		MaxTokens: int(record.MaxTokens),
+	}
+	if !record.APIKeyConfigured {
+		return runtimeConfig, nil
+	}
+
+	encryptedAPIKey, err := s.store.GetModelConfigAPIKey(ctx, id)
+	if err != nil {
+		return config.ModelConfig{}, err
+	}
+	apiKey, err := s.cipher.Decrypt(encryptedAPIKey)
+	if err != nil {
+		return config.ModelConfig{}, fmt.Errorf("decrypt model config API key: %w", err)
+	}
+	runtimeConfig.APIKey = string(apiKey)
+
+	return runtimeConfig, nil
+}
+
 // List 查询全部模型配置
 func (s *Service) List(ctx context.Context) ([]ModelConfig, error) {
 	records, err := s.store.ListModelConfigs(ctx)

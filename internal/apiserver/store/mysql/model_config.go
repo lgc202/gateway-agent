@@ -75,6 +75,22 @@ func (s *Store) GetModelConfig(ctx context.Context, id uint64) (ModelConfig, err
 	return modelConfigFromGetRow(record), nil
 }
 
+// GetModelConfigAPIKey 单独读取模型配置的加密 API Key
+func (s *Store) GetModelConfigAPIKey(ctx context.Context, id uint64) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
+	defer cancel()
+
+	apiKey, err := s.queries.GetModelConfigAPIKey(ctx, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errorsx.NewUser(errorsx.CodeModelConfigNotFound, "模型配置不存在")
+	}
+	if err != nil {
+		return nil, databaseError(err)
+	}
+
+	return apiKey, nil
+}
+
 // ListModelConfigs 查询全部模型配置，不读取 API Key
 func (s *Store) ListModelConfigs(ctx context.Context) ([]ModelConfig, error) {
 	ctx, cancel := context.WithTimeout(ctx, databaseOperationTimeout)
