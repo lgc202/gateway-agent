@@ -9,3 +9,15 @@ mysql:
   database: "gateway_agent"
   username: "gateway_agent"
   password: "gateway_agent"
+
+model:
+  provider: "openai"
+  # 留空时使用对应 Provider 的默认地址，也可接入兼容服务或代理
+  base_url: ""
+  api_key: ""
+  name: ""
+  max_tokens: 4096
+
+agent:
+  # 限制一次请求中模型与 Tool 交互的最大轮数
+  max_iterations: 8

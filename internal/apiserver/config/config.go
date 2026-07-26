@@ -12,6 +12,8 @@ import (
 type Config struct {
 	HTTP  HTTPConfig  `mapstructure:"http"`
 	MySQL MySQLConfig `mapstructure:"mysql"`
+	Model ModelConfig `mapstructure:"model"`
+	Agent AgentConfig `mapstructure:"agent"`
 }
 
 // HTTPConfig 定义 HTTP Server 配置
@@ -27,6 +29,20 @@ type MySQLConfig struct {
 	Database string `mapstructure:"database"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
+}
+
+// ModelConfig 定义默认模型的 Provider、连接信息和生成参数
+type ModelConfig struct {
+	Provider  string `mapstructure:"provider"`
+	BaseURL   string `mapstructure:"base_url"`
+	APIKey    string `mapstructure:"api_key"`
+	Name      string `mapstructure:"name"`
+	MaxTokens int    `mapstructure:"max_tokens"`
+}
+
+// AgentConfig 定义 Agent 的运行参数
+type AgentConfig struct {
+	MaxIterations int `mapstructure:"max_iterations"`
 }
 
 // Load 从指定 YAML 和环境变量加载配置，并在进程启动阶段完成必要校验
@@ -58,6 +74,24 @@ func Load(configFile string) (*Config, error) {
 	}
 	if err := v.BindEnv("mysql.password", "MYSQL_PASSWORD"); err != nil {
 		return nil, fmt.Errorf("bind MYSQL_PASSWORD: %w", err)
+	}
+	if err := v.BindEnv("model.provider", "MODEL_PROVIDER"); err != nil {
+		return nil, fmt.Errorf("bind MODEL_PROVIDER: %w", err)
+	}
+	if err := v.BindEnv("model.base_url", "MODEL_BASE_URL"); err != nil {
+		return nil, fmt.Errorf("bind MODEL_BASE_URL: %w", err)
+	}
+	if err := v.BindEnv("model.api_key", "MODEL_API_KEY"); err != nil {
+		return nil, fmt.Errorf("bind MODEL_API_KEY: %w", err)
+	}
+	if err := v.BindEnv("model.name", "MODEL_NAME"); err != nil {
+		return nil, fmt.Errorf("bind MODEL_NAME: %w", err)
+	}
+	if err := v.BindEnv("model.max_tokens", "MODEL_MAX_TOKENS"); err != nil {
+		return nil, fmt.Errorf("bind MODEL_MAX_TOKENS: %w", err)
+	}
+	if err := v.BindEnv("agent.max_iterations", "AGENT_MAX_ITERATIONS"); err != nil {
+		return nil, fmt.Errorf("bind AGENT_MAX_ITERATIONS: %w", err)
 	}
 
 	if err := v.ReadInConfig(); err != nil {
