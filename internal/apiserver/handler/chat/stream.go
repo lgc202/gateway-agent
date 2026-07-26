@@ -8,15 +8,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	chatdto "github.com/lgc202/gateway-agent/internal/apiserver/dto/chat"
 	"github.com/lgc202/gateway-agent/internal/apiserver/handler/response"
 	chatservice "github.com/lgc202/gateway-agent/internal/apiserver/service/chat"
 )
 
 const streamErrorEvent = "error"
-
-type textDeltaResponse struct {
-	Content string `json:"content"`
-}
 
 // streamReply 通过同一条 HTTP 响应持续写入 Agent 事件
 func streamReply(ctx *gin.Context, events iter.Seq2[chatservice.ReplyEvent, error]) {
@@ -39,9 +36,9 @@ func streamReply(ctx *gin.Context, events iter.Seq2[chatservice.ReplyEvent, erro
 
 		switch event.Type {
 		case chatservice.ReplyEventTypeTextDelta:
-			ctx.SSEvent(string(event.Type), textDeltaResponse{Content: event.Content})
+			ctx.SSEvent(string(event.Type), chatdto.NewTextDeltaResp(event.Content))
 		case chatservice.ReplyEventTypeCompleted:
-			ctx.SSEvent(string(event.Type), toMessageResponse(*event.Message))
+			ctx.SSEvent(string(event.Type), chatdto.NewMessageResp(*event.Message))
 		}
 		ctx.Writer.Flush()
 	}

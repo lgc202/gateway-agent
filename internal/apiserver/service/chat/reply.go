@@ -3,16 +3,11 @@ package chat
 import (
 	"context"
 	"iter"
-	"strings"
 
 	agentservice "github.com/lgc202/gateway-agent/internal/apiserver/service/agent"
-	"github.com/lgc202/gateway-agent/internal/pkg/errorsx"
 )
 
-const (
-	maxMessageContentBytes = 60 * 1024
-	recentMessageLimit     = 100
-)
+const recentMessageLimit = 100
 
 // ReplyEventType 表示一次 Agent 回复过程中产生的事件类型
 type ReplyEventType string
@@ -37,13 +32,6 @@ func (s *Service) StreamReply(
 	chatID uint64,
 	content string,
 ) (iter.Seq2[ReplyEvent, error], error) {
-	if strings.TrimSpace(content) == "" || len(content) > maxMessageContentBytes {
-		return nil, errorsx.NewUser(
-			errorsx.CodeInvalidMessageContent,
-			"消息内容不能为空且不能超过 60 KiB",
-		)
-	}
-
 	chat, err := s.store.GetChat(ctx, chatID)
 	if err != nil {
 		return nil, err
